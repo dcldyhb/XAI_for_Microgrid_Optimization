@@ -45,8 +45,9 @@ $$
 ### Gamma 信号: `yhat_ess1_down`
 
 **最佳公式 (LaTeX):**
+
 $$
-x_{19} \cos{\left(\frac{\sin{\left(x_{1} \right)} \cos{\left(\frac{\log{\left(x_{14} \right)}}{\sin{\left(\frac{4.622}{\sin{\left(x_{9} \right)}} \right)}} \right)}}{x_{2} + x_{7} + 1.305 \left(- x_{16} - 7.151\right) \cos{\left(x_{0} - 4.622 \right)}} \right)}
+x_{20} \cos{\left(\frac{x_{5} - 0.7314}{x_{10} + \sin{\left(\frac{x_{5} - 0.7314}{x_{10} - 0.5171 - - \frac{0.8376}{\cos{\left(x_{0} \right)}}} \right)} - - \frac{0.8377}{\cos{\left(x_{0} \right)}}} \right)}
 $$
 
 ---
@@ -56,7 +57,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} + e^{e^{- x_{19} + \frac{\sin{\left(\frac{1.000 - x_{9}}{-2.481} \right)} - \sin{\left(\frac{x_{17}}{x_{13} - 0.6748} \right)}}{x_{6}}}} \cdot 0.0003976
+\sin{\left(\frac{x_{20} - e^{\cos{\left(x_{9} \left(-0.9293\right) \right)} + \cos{\left(\frac{x_{10}}{-1.806} \right)} + \cos{\left(x_{0} + 1.824 \right)}} \left(-0.4715\right) \frac{1}{x_{0}}}{0.6853} \right)}
 $$
 
 ---
@@ -66,7 +67,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-\sin{\left(e^{\sin{\left(\sin{\left(\frac{\sin{\left(\frac{0.5946}{2.146 \sin{\left(\frac{0.6002}{1.055 x_{13}} \right)}} \right)}}{0.4505} \right)} \right)}} x_{20} \cdot 0.7304 \right)}
+x_{19} \sin{\left(3.667 \left(\sin{\left(\frac{x_{6}}{\sin{\left(0.4298 + \frac{x_{19}}{x_{12}} \right)}} \right)} - 0.3538\right) \right)}
 $$
 
 ---
@@ -76,7 +77,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{20} + \frac{0.3848}{e^{e^{x_{20} + \sin{\left(x_{10} \cdot 0.5234 \right)} - -1.120} + \sin{\left(x_{9} \right)}} e^{\sin{\left(0.7969 x_{10} \right)}}}
+\cos{\left(e^{- (x_{19} - \cos{\left(\frac{\cos{\left(e^{e^{\sin{\left(e^{e^{\cos{\left(x_{15} \cos{\left(e^{x_{4}} \right)} \right)}}} \right)}}} \right)}}{e^{\cos{\left(x_{15} \cos{\left(e^{x_{4}} \right)} \right)}}} \right)}) - 0.2857} - 0.4402 \right)}
 $$
 
 ---
@@ -86,7 +87,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-1.030 x_{20} \cos{\left(\frac{\cos{\left(48.26 x_{13} \log{\left(x_{9} \right)} \right)}}{x_{12} x_{15} \cos{\left(8.903 x_{13} \right)}} \right)}
+x_{19} \cos{\left(\log{\left(x_{12} \right)} \cos{\left(\frac{1.506}{\sin{\left(\frac{1.199}{\sin{\left(\frac{0.6624 \left(- x_{16} - 0.2615\right)}{x_{4}} \right)}} \right)}} \right)} \right)}
 $$
 
 ---
@@ -96,7 +97,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} x_{4} - - 0.03253 e^{\frac{\sin{\left(- \frac{x_{10}}{0.9844} - 0.2979 \right)}}{- \sin{\left(\sin{\left(x_{10} \left(-0.7279\right) \right)} \right)} - 1.173}}
+x_{20} - 0.07144 + \frac{0.04455}{x_{20} + \sin{\left(\frac{x_{17}}{x_{4}} + 1.197 \right)} + 0.4382}
 $$
 
 ---
@@ -106,7 +107,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-\sin{\left(\frac{x_{19}}{\cos{\left(\frac{\cos{\left(\cos{\left(\frac{- x_{11} - 0.4137}{x_{13}} \right)} \right)}}{x_{4} \left(\frac{x_{12}}{-0.3428} - 0.2867\right)} \right)}} \right)}
+\sin{\left(\frac{\sin{\left(x_{20} \left(e^{\sin{\left(- \frac{0.7982}{x_{12}} \right)}} - \cos{\left(\frac{2.745}{x_{13}} \right)}\right) \right)}}{0.6142} \right)}
 $$
 
 ---
@@ -116,7 +117,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} + \frac{\sin{\left(x_{9} \right)}}{x_{16} \frac{1}{1.063 - x_{19}} \left(\cos{\left(\frac{x_{9}}{-2.163} \right)} - 1.063\right)}
+\cos{\left(\left(- x_{20} + x_{4}\right) 1.621 \right)}
 $$
 
 ---
@@ -126,7 +127,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} \sin{\left(e^{e^{\cos{\left(x_{9} \left(-12.19\right) \frac{1}{10.45 \left(x_{16} - x_{9} - \cos{\left(x_{12} x_{3} - x_{9} \right)}\right)} \right)}}} \right)}
+x_{20} + \frac{3.568}{\left(2.279 - x_{14}\right) \left(x_{8} + 35.43 \left(- x_{20} - 1.152\right)\right)}
 $$
 
 ---
@@ -136,7 +137,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-\sin{\left(\frac{x_{11} + x_{13} + 1.765 + \frac{x_{19}}{1.824 x_{13}}}{-0.9306} \right)}
+\left(x_{13} + x_{20} \cdot 0.7780 - 0.1331\right) \sin{\left(\frac{0.5926}{x_{13}} \right)}
 $$
 
 ---
@@ -146,7 +147,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-\cos{\left(0.8309 - \cos{\left(e^{x_{6} \cdot 3.355} \right)} \right)}
+\cos{\left(\cos{\left(e^{e^{x_{4} + 0.1922}} \right)} + 0.6686 \right)}
 $$
 
 ---
@@ -156,7 +157,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-\sin{\left(x_{19} + \sin{\left(\frac{x_{19} \cos{\left(\frac{2.317}{x_{13}} \right)}}{-0.7918} \right)} \right)}
+x_{19} e^{\frac{e^{- x_{10} + x_{16}}}{-6.318}}
 $$
 
 ---
@@ -166,7 +167,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-\cos{\left(\cos{\left(\frac{x_{14}}{x_{6}} \right)} \right)}
+\sin{\left(x_{19} - - \frac{6.787}{x_{4}} \right)}
 $$
 
 ---
@@ -176,7 +177,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{20}
+x_{20} x_{20}
 $$
 
 ---
@@ -186,7 +187,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} x_{20}
+x_{19}
 $$
 
 ---
@@ -196,7 +197,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} x_{20}
+x_{19}
 $$
 
 ---
@@ -216,7 +217,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} \cdot 1.000
+x_{20}
 $$
 
 ---
@@ -226,7 +227,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{20} \cos{\left(- x_{13} + x_{21} \right)}
+x_{20} \cos{\left(\frac{0.009959}{\log{\left(x_{6} \right)}} \right)}
 $$
 
 ---
@@ -236,7 +237,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{20} x_{20}
+x_{19}
 $$
 
 ---
@@ -246,7 +247,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19}
+x_{20}
 $$
 
 ---
@@ -256,7 +257,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19}
+x_{20}
 $$
 
 ---
@@ -276,7 +277,7 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19} x_{19}
+x_{19}
 $$
 
 ---
@@ -286,5 +287,5 @@ $$
 **最佳公式 (LaTeX):**
 
 $$
-x_{19}
+x_{20}
 $$
