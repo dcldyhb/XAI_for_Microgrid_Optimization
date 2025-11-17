@@ -4,5 +4,7 @@
 # PySR 自己生成文件
 /outputs/
 
-# 每次输出的文件
-/PySR_gamma/output_vector/
+# 每次输出的文件，但是保留空文件夹
+PySR_gamma/output_vector/gamma_calculator.py
+PySR_gamma/output_vector/gamma_formulas.csv
+PySR_gamma/output_vector/result.md
