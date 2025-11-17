@@ -1,7 +1,8 @@
-PySR_gamma/.DS_Store
-/outputs
+# macOS 系统文件
 .DS_Store
-/PySR_gamma/output_vector
-PySR_gamma/output_vector/gamma_calculator.py
-PySR_gamma/output_vector/gamma_formulas.csv
-PySR_gamma/output_vector/result.md
+
+# PySR 自己生成文件
+/outputs/
+
+# 每次输出的文件
+/PySR_gamma/output_vector/
