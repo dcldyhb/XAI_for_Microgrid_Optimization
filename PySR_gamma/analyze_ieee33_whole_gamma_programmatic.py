@@ -87,7 +87,7 @@ markdown_lines = [
 
 # 添加特征映射表到 Markdown
 for i, name in enumerate(feature_names):
-    markdown_lines.append(f"| $x_{i}$ | `{name}` |")
+    markdown_lines.append(f"| $x_{"{i}"}$ | `{name}` |")
 markdown_lines.append("\n")
 
 # 添加变量解包代码到 Python 模块
@@ -127,7 +127,7 @@ for i, target_column in enumerate(gamma_target_columns):
     # 3. 准备 Markdown 内容
     markdown_lines.append("---\n")
     markdown_lines.append(f"### Gamma 信号: `{target_column}`\n")
-    markdown_lines.append("**最佳公式 (LaTeX):**\n")
+    markdown_lines.append("**最佳公式:**\n")
     if has_result:
         markdown_lines.append(f"$$\n{latex_equation}\n$$\n")
     else:
