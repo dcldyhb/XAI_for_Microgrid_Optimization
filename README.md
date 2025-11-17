@@ -1,9 +1,12 @@
 # PySR_gamma 使用说明
 
-> 本项目中的路径均已使用相对路径，请放心使用 desuwa
+> 本项目中的路径均已使用相对路径，请放心使用
+>
 > 但是源文件是在 MacOS 26 上创建的，在 Windows 上打开时可能会出现奇奇怪怪的问题，请注意
+>
 > 比如 bash 指令的部分名称不同，路径分隔符不同等
-> 在 Ubuntu 22.06 上测试没有问题
+>
+> 在 Ubuntu 22.04 上测试没有问题
 
 ## 项目结构
 
@@ -17,7 +20,7 @@
 │   ├── output_vector/
 │   │   ├── gamma_calculator.py                   # 自动生成的、可直接调用的 Python 模块
 │   │   └── gamma_formulas.csv                    # 包含公式的 CSV 文件
-│   │   └── result.md                             # 分析结果的 Markdown 文件，内含有特征索引映射表和所有以 $LaTeX$ 格式表示的公式，便于查看
+│   │   └── result.md                             # 分析结果的 Markdown 文件，内含有特征索引映射表和所有以 LaTeX 格式表示的公式，便于查看
 │   │
 │   └── analyze_ieee_whole_gamma_programmatic.py  # 用于分析数据并生成 gamma_calculator.py 的主脚本
 │   │
