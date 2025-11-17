@@ -87,7 +87,7 @@ markdown_lines = [
 
 # 添加特征映射表到 Markdown
 for i, name in enumerate(feature_names):
-    markdown_lines.append(f"| $x_{"{i}"}$ | `{name}` |")
+    markdown_lines.append(f"| $x_{{{i}}}$ | `{name}` |")
 markdown_lines.append("\n")
 
 # 添加变量解包代码到 Python 模块
