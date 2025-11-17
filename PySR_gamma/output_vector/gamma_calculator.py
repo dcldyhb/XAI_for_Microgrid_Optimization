@@ -35,31 +35,31 @@ class GeneratedGammaCalculator:
 
         # Calculate each gamma component
         gamma_0 = x20  # Formula for yhat_ess1_up
-        gamma_1 = np.cos(np.cos(np.log(x14) / np.sin(4.6223493 / np.sin(x9))) * (np.sin(x1) / (x2 + (((-7.1510797 - x16) * (1.3045293 * np.cos(x0 - 4.6223493))) + x7)))) * x19  # Formula for yhat_ess1_down
-        gamma_2 = x19 + (np.exp(np.exp(((np.sin((1.0003977 - x9) / -2.4805896) - np.sin(x17 / (x13 - 0.67480236))) / x6) - x19)) * 0.00039764764)  # Formula for yhat_ess2_up
-        gamma_3 = np.sin((np.exp(np.sin(np.sin(np.sin(0.59462315 / (np.sin(0.60017574 / (x13 * 1.0549589)) * 2.145705)) / 0.4505158))) * x20) * 0.7304368)  # Formula for yhat_ess2_down
-        gamma_4 = (0.38482314 / (np.exp(np.sin(0.79689807 * x10)) * np.exp(np.exp((x20 + np.sin(x10 * 0.5233885)) - -1.1199477) + np.sin(x9)))) + x20  # Formula for yhat_ess3_up
-        gamma_5 = (x20 * 1.0300412) * np.cos(np.cos((x13 / (-0.12644365 / np.log(x9))) * 6.102543) / ((x15 * x12) * np.cos((x13 / 0.91409487) / -0.12287817)))  # Formula for yhat_ess3_down
-        gamma_6 = (x4 * x19) - (-0.032532744 * np.exp(np.sin(-0.29794207 - (x10 / 0.98438436)) / (-1.17327 - np.sin(np.sin(x10 * -0.7279275)))))  # Formula for yhat_ess4_up
-        gamma_7 = np.sin(x19 / np.cos(np.cos(np.cos((-0.4136501 - x11) / x13)) / (x4 * ((x12 / -0.342813) + -0.2866511))))  # Formula for yhat_ess4_down
-        gamma_8 = (np.sin(x9) / (((np.cos(x9 / -2.162963) - 1.0624925) * x16) / (1.0624925 - x19))) + x19  # Formula for yhat_ess5_up
-        gamma_9 = x19 * np.sin(np.exp(np.exp(np.cos(x9 * (-12.192526 / (((x16 - x9) - np.cos((x3 * x12) - x9)) * 10.445083))))))  # Formula for yhat_ess5_down
-        gamma_10 = np.sin((((x11 + 1.7653188) + ((x19 / x13) / 1.8240205)) + x13) / -0.9306248)  # Formula for yhat_sop1_fwd
-        gamma_11 = np.cos(0.83093876 - np.cos(np.exp(x6 * 3.354825)))  # Formula for yhat_sop1_rev
-        gamma_12 = np.sin(x19 + np.sin((np.cos(2.316559 / x13) * x19) / -0.7918499))  # Formula for yhat_sop2_fwd
-        gamma_13 = np.cos(np.cos(x14 / x6))  # Formula for yhat_sop2_rev
-        gamma_14 = x20  # Formula for yhat_pv1
-        gamma_15 = x19 * x20  # Formula for yhat_pv2
-        gamma_16 = x20 * x19  # Formula for yhat_pv3
+        gamma_1 = np.cos((x5 + -0.7314017) / (x10 + (np.sin((x5 + -0.73140293) / ((x10 - (-0.8376213 / np.cos(x0))) + -0.5171355)) - (-0.8377111 / np.cos(x0))))) * x20  # Formula for yhat_ess1_down
+        gamma_2 = np.sin((x20 - (np.exp((np.cos(x9 * -0.9293466) + np.cos(x10 / -1.8063388)) + np.cos(x0 + 1.8242577)) * (-0.4715142 / x0))) / 0.68531096)  # Formula for yhat_ess2_up
+        gamma_3 = x19 * np.sin(3.6668582 * (-0.35382104 + np.sin(x6 / np.sin((x19 / x12) + 0.42984277))))  # Formula for yhat_ess2_down
+        gamma_4 = np.cos(np.exp(-0.28565803 - (x19 - np.cos(np.cos(np.exp(np.exp(np.sin(np.exp(np.exp(np.cos(np.cos(np.exp(x4)) * x15))))))) / np.exp(np.cos(x15 * np.cos(np.exp(x4))))))) - 0.44017023)  # Formula for yhat_ess3_up
+        gamma_5 = x19 * np.cos(np.cos(-1.5064305 / np.sin(-1.1989906 / np.sin((-0.26150653 - x16) / (x4 / 0.66241705)))) * np.log(x12))  # Formula for yhat_ess3_down
+        gamma_6 = (0.04455137 / (np.sin((x17 / x4) + 1.1965765) + (x20 + 0.43819284))) + (x20 - 0.071441166)  # Formula for yhat_ess4_up
+        gamma_7 = np.sin(np.sin(x20 * (np.exp(np.sin(-0.79819804 / x12)) - np.cos(2.744782 / x13))) / 0.61423206)  # Formula for yhat_ess4_down
+        gamma_8 = np.cos((x4 - x20) * 1.6209244)  # Formula for yhat_ess5_up
+        gamma_9 = (3.567692 / ((x8 + (35.434715 * (-1.1516261 - x20))) * (2.2788258 - x14))) + x20  # Formula for yhat_ess5_down
+        gamma_10 = (x13 + ((x20 * 0.7780336) - 0.13307951)) * np.sin(0.59257233 / x13)  # Formula for yhat_sop1_fwd
+        gamma_11 = np.cos(np.cos(np.exp(np.exp(x4 + 0.19219609))) + 0.6686028)  # Formula for yhat_sop1_rev
+        gamma_12 = x19 * np.exp(np.exp(x16 - x10) / -6.3184824)  # Formula for yhat_sop2_fwd
+        gamma_13 = np.sin(x19 - (-6.786821 / x4))  # Formula for yhat_sop2_rev
+        gamma_14 = x20 * x20  # Formula for yhat_pv1
+        gamma_15 = x19  # Formula for yhat_pv2
+        gamma_16 = x19  # Formula for yhat_pv3
         gamma_17 = x20  # Formula for yhat_pv4
-        gamma_18 = x19 * 1.0  # Formula for yhat_pv5
-        gamma_19 = np.cos(x21 - x13) * x20  # Formula for yhat_pv6
-        gamma_20 = x20 * x20  # Formula for yhat_wt1
-        gamma_21 = x19  # Formula for yhat_wt2
-        gamma_22 = x19  # Formula for yhat_wt3
+        gamma_18 = x20  # Formula for yhat_pv5
+        gamma_19 = np.cos(-0.009958512 / np.log(x6)) * x20  # Formula for yhat_pv6
+        gamma_20 = x19  # Formula for yhat_wt1
+        gamma_21 = x20  # Formula for yhat_wt2
+        gamma_22 = x20  # Formula for yhat_wt3
         gamma_23 = x20  # Formula for yhat_wt4
-        gamma_24 = x19 * x19  # Formula for yhat_wt5
-        gamma_25 = x19  # Formula for yhat_wt6
+        gamma_24 = x19  # Formula for yhat_wt5
+        gamma_25 = x20  # Formula for yhat_wt6
 
         # Combine components into a vector
         gamma_values = [gamma_0, gamma_1, gamma_2, gamma_3, gamma_4, gamma_5, gamma_6, gamma_7, gamma_8, gamma_9, gamma_10, gamma_11, gamma_12, gamma_13, gamma_14, gamma_15, gamma_16, gamma_17, gamma_18, gamma_19, gamma_20, gamma_21, gamma_22, gamma_23, gamma_24, gamma_25]
