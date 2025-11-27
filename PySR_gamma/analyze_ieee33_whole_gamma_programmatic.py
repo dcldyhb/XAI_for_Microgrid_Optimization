@@ -70,8 +70,8 @@ for target_column in gamma_target_columns:
     # 这里可以根据需要调整 PySR 的参数
     model = PySRRegressor(
         niterations=40, 
-        binary_operators=["+", "*", "/", "-"], 
-        unary_operators=["cos", "exp", "sin", "log"], 
+        binary_operators=["+", "*", "safe_div", "-"], # 使用 'safe_div'
+        unary_operators=["cos", "exp", "sin", "safe_log"], # 使用 'safe_log' 
         model_selection="best"
     )
     model.fit(X, y)
