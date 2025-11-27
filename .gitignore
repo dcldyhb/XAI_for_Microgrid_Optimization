@@ -1,14 +1,70 @@
-# macOS 系统文件
+# ==================================
+# 1. 操作系统生成的文件 (macOS, Windows, Linux)
+# ==================================
 .DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# PySR 自己生成文件
-/outputs/
+# ==================================
+# 2. Python 缓存与环境
+# ==================================
+# 字节码和缓存
+__pycache__/
+*.py[cod]
+*$py.class
 
-# 每次输出的文件，但是保留空文件夹
-PySR_gamma/output_vector/gamma_calculator.py
-PySR_gamma/output_vector/gamma_formulas.csv
-PySR_gamma/output_vector/result.md
+# 虚拟环境 (venv, env, etc.)
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# 方言个人整理文件
-/collect/
-/test/
+# ==================================
+# 3. IDE 和编辑器配置
+# ==================================
+# Visual Studio Code
+.vscode/
+
+# PyCharm / IntelliJ
+.idea/
+
+# Spyder
+.spyderproject/
+.spyderproject_v5/
+
+# Vim & other editors
+*.swp
+*.swo
+
+# ==================================
+# 4. 项目特定的输出与日志 (最重要)
+# ==================================
+# 统一的输出目录，包含所有 CSV, PNG, logs
+outputs/
+
+# 旧的 TensorBoard 日志目录
+runs/
+
+# 根目录下散落的临时结果文件 (使用通配符)
+node_voltages_*.csv
+voltage_analysis_report_*.csv
+
+# ==================================
+# 5. PySR 生成的文件 (可选)
+# ==================================
+# PySR 的输出目录包含自动生成的代码和结果。
+# 如果您希望每次都通过运行 PySR 脚本来生成 gamma_calculator.py，
+# 而不是将其纳入版本控制，请取消下面这行的注释。
+# PySR_gamma/output_vector/
+
+# ==================================
+# 6. 其他
+# =
+# Jupyter Notebook 检查点
+.ipynb_checkpoints/
