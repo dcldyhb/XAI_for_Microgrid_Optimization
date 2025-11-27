@@ -1,0 +1,27 @@
+gamma_signal,equation,latex_equation
+yhat_ess1_up,x19 * x19,x_{19} x_{19}
+yhat_ess1_down,sin(x20 * ((0.065263286 / (-3.8394358 - (((0.8424501 + log(x0)) * (x10 + 0.08374195)) * (x3 + cos(x0))))) + 1.5602145)),\sin{\left(x_{20} \left(1.560 + \frac{0.06526}{- \left(x_{10} + 0.08374\right) \left(x_{3} + \cos{\left(x_{0} \right)}\right) \left(\log{\left(x_{0} \right)} + 0.8425\right) - 3.839}\right) \right)}
+yhat_ess2_up,x19 + (-0.0024068295 / (x19 - (sin((2.7311752 - x6) * x15) * -0.38768852))),x_{19} - \frac{0.002407}{x_{19} - \sin{\left(x_{15} \left(2.731 - x_{6}\right) \right)} \left(-0.3877\right)}
+yhat_ess2_down,x20 * cos(sin(sin(0.42511383 / sin(-1.7690268 / sin(exp(sin(-1.7590646 / x13) + 0.90088147))))) + 0.557642),x_{20} \cos{\left(\sin{\left(\sin{\left(\frac{0.4251}{\sin{\left(- \frac{1.769}{\sin{\left(e^{\sin{\left(- \frac{1.759}{x_{13}} \right)} + 0.9009} \right)}} \right)}} \right)} \right)} + 0.5576 \right)}
+yhat_ess3_up,sin(1.524106 * (x20 + (((-0.95748353 - (sin(x8) + sin(x10))) * (x4 + -0.9799438)) * 2.40827))),\sin{\left(1.524 \left(x_{20} + \left(- (\sin{\left(x_{10} \right)} + \sin{\left(x_{8} \right)}) - 0.9575\right) \left(x_{4} - 0.9799\right) 2.408\right) \right)}
+yhat_ess3_down,x19 * ((cos(0.21814884 / sin(x0 / (((x13 * x14) + -1.1899849) / (x16 / x0)))) * 0.5879005) + 0.44087246),x_{19} \left(\cos{\left(\frac{0.2181}{\sin{\left(\frac{x_{0}}{\frac{1}{\frac{1}{x_{0}} x_{16}} \left(x_{13} x_{14} - 1.190\right)} \right)}} \right)} 0.5879 + 0.4409\right)
+yhat_ess4_up,cos(cos(x17 * cos(x4)) - (-0.2304556 / (x20 - 0.36276382))),\cos{\left(\cos{\left(x_{17} \cos{\left(x_{4} \right)} \right)} - - \frac{0.2305}{x_{20} - 0.3628} \right)}
+yhat_ess4_down,sin(x19 * exp(exp(sin(-0.8261234 - sin(-2.5477512 / x13))))),\sin{\left(x_{19} e^{e^{\sin{\left(- \sin{\left(- \frac{2.548}{x_{13}} \right)} - 0.8261 \right)}}} \right)}
+yhat_ess5_up,x19 + 0.0071574925,x_{19} + 0.007158
+yhat_ess5_down,x20 * cos(0.46657282 / ((x12 - x9) + (((-0.22085111 * (-0.1685712 - x7)) + x15) + -0.45686227))),x_{20} \cos{\left(\frac{0.4666}{x_{12} + x_{15} - x_{9} - 0.2209 \left(- x_{7} - 0.1686\right) - 0.4569} \right)}
+yhat_sop1_fwd,sin(((x13 * 1.4370056) + 6.0518293) * exp(x19 * (x12 + -0.17027885))),\sin{\left(\left(x_{13} \cdot 1.437 + 6.052\right) e^{x_{19} \left(x_{12} - 0.1703\right)} \right)}
+yhat_sop1_rev,cos(-0.80877674 + sin(x19 + cos((x16 * 1.0551211) / x4))),\cos{\left(\sin{\left(x_{19} + \cos{\left(x_{16} \cdot 1.055 \frac{1}{x_{4}} \right)} \right)} - 0.8088 \right)}
+yhat_sop2_fwd,sin(-3.880499 + (x18 - sin((-2.4478257 / x13) - x20))) * x20,x_{20} \sin{\left(x_{18} - \sin{\left(- x_{20} - \frac{2.448}{x_{13}} \right)} - 3.880 \right)}
+yhat_sop2_rev,cos(cos(x15 / x6)),\cos{\left(\cos{\left(\frac{x_{15}}{x_{6}} \right)} \right)}
+yhat_pv1,x20 * x20,x_{20} x_{20}
+yhat_pv2,x19,x_{19}
+yhat_pv3,x19 * 1.0,x_{19} \cdot 1.000
+yhat_pv4,x20,x_{20}
+yhat_pv5,x19,x_{19}
+yhat_pv6,sin(((x21 + 0.29970706) / (x13 / 1.1064818)) * x20),\sin{\left(\frac{x_{20} \left(x_{21} + 0.2997\right)}{\frac{1}{1.106} x_{13}} \right)}
+yhat_wt1,x20,x_{20}
+yhat_wt2,x20,x_{20}
+yhat_wt3,x19,x_{19}
+yhat_wt4,x19,x_{19}
+yhat_wt5,x19,x_{19}
+yhat_wt6,x19 * x19,x_{19} x_{19}
