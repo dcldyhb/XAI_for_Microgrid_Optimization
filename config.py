@@ -10,7 +10,7 @@ import sys
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # 数据集路径
-DATASET_PATH = os.path.join(PROJECT_ROOT, "dataset", "dataset_ieee33_extreme.csv")
+DATASET_PATH = os.path.join(PROJECT_ROOT, "dataset", "dataset_ieee33_extreme_full.csv")
 
 # PySR 产出路径 (gamma_calculator.py 所在位置)
 PYSR_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "PySR_gamma", "output_vector")

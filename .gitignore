@@ -47,6 +47,7 @@ venv.bak/
 # ==================================
 # 统一的输出目录，包含所有 CSV, PNG, logs
 outputs/
+collect/
 
 # 旧的 TensorBoard 日志目录
 runs/
@@ -68,3 +69,7 @@ voltage_analysis_report_*.csv
 # =
 # Jupyter Notebook 检查点
 .ipynb_checkpoints/
+
+# 个人测试文件
+
+test/
