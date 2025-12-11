@@ -8,7 +8,7 @@
 
 ```text
 XAI_test/
-├── main_run.py                     # [入口] 主程序：负责训练 SAC 智能体并调用绘图
+├── main_gamma.py                     # [入口] 主程序：负责训练 SAC 智能体并调用绘图
 ├── main.py                         # 不知道什么用的一个主程序
 ├── requirements.txt                # 项目依赖列表（已锁定版本以防冲突）
 ├── config.py                       # 全局路径与设备配置
@@ -52,29 +52,37 @@ pip install -r requirements.txt
 ```
 
 > **注意**：本项目依赖 `pandapower` 和 `gym` 的旧版本，因此 `numpy` 被锁定在 `<2.0`。请勿随意升级 numpy。
+>
+> 并且项目中使用了 `torch`，请根据你的硬件选择合适的安装命令和版本，win 可以使用 cpu 或 NVIDIA GPU（cuda），macOS 则使用 MPS。
 
 ## 运行指南
 
 ### 第一步：运行 PySR 符号回归
 
-如果你需要重新生成特征公式：
+生成特征公式：
 
 ```bash
 python PySR_gamma/analyze_ieee33_whole_gamma_programmatic.py
 ```
 
-- 这将在 `PySR_gamma/output_vector/` 下生成新的 `gamma_calculator.py`。
+- 这将在 `PySR_gamma/output_vector/` 下生成 `gamma_calculator.py`。
 
-### 第二步：运行 SAC 训练 (主程序)
+### 第二步：运行 SAC 训练
 
 加载数据、环境与生成的公式，开始训练并自动保存结果：
 
 ```bash
-python main_run.py
+python main_sac.py
 ```
 
 - 程序会自动检测你的硬件（CUDA/MPS/CPU）。
 - 训练完成后，会自动进行绘图并保存。
+
+或者引入 PySR 的 `gamma` 公式进行训练：
+
+```bash
+python main_gamma.py
+```
 
 ## 结果输出
 

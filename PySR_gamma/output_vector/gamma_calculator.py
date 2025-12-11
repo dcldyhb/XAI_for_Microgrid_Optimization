@@ -4,7 +4,12 @@ import torch
 import sys
 import os
 
-# 动态寻找项目根目录并导入 DEVICE
+# --- 安全函数，防止数学错误 ---
+def safe_log(x):
+    # 防止对 0 或负数取对数
+    return np.log(np.abs(x) + 1e-9)
+
+# --- 动态路径，导入全局配置 ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
@@ -12,16 +17,16 @@ if project_root not in sys.path:
 try:
     from config import DEVICE
 except ImportError:
-    # Fallback if config is not found
     DEVICE = torch.device('cpu')
 
 class GeneratedGammaCalculator:
     def __init__(self):
-        self.feature_names = ['temperature_C', 'wind_speed_ms', 'illuminance_lux', 'precipitation_mm', 'elec_vmin', 'elec_vmax', 'elec_vavg', 'elec_line_loading_max', 'elec_line_loading_top1', 'elec_line_loading_top2', 'elec_line_loading_top3', 'elec_vmax_nonslack', 'elec_line_i_ka_max', 'elec_p_loss_mw', 'elec_soc_1', 'elec_soc_2', 'elec_soc_3', 'elec_soc_4', 'elec_soc_5', 'elec_any_violate', 'elec_violate_v', 'elec_violate_line']
+        np.seterr(all='ignore') # 忽略所有numpy计算警告
+        self.feature_names = ['temperature', 'wind_speed', 'solar_irradiance', 'precipitation_mm', 'elec_vmin', 'elec_vmax', 'elec_vavg', 'elec_line_loading_max', 'elec_line_loading_top1', 'elec_line_loading_top2', 'elec_line_loading_top3', 'elec_vmax_nonslack', 'elec_line_i_ka_max', 'elec_p_loss_mw', 'elec_soc_1', 'elec_soc_2', 'elec_soc_3', 'elec_soc_4', 'elec_soc_5', 'elec_any_violate', 'elec_violate_v', 'elec_violate_line', 'grid_load_demand', 'hour_of_day', 'day_of_week']
         self.gamma_signals = ['yhat_ess1_up', 'yhat_ess1_down', 'yhat_ess2_up', 'yhat_ess2_down', 'yhat_ess3_up', 'yhat_ess3_down', 'yhat_ess4_up', 'yhat_ess4_down', 'yhat_ess5_up', 'yhat_ess5_down', 'yhat_sop1_fwd', 'yhat_sop1_rev', 'yhat_sop2_fwd', 'yhat_sop2_rev', 'yhat_pv1', 'yhat_pv2', 'yhat_pv3', 'yhat_pv4', 'yhat_pv5', 'yhat_pv6', 'yhat_wt1', 'yhat_wt2', 'yhat_wt3', 'yhat_wt4', 'yhat_wt5', 'yhat_wt6']
 
     def compute(self, state):
-        # Unpack state variables to match PySR's x_i notation
+        # Unpack state variables
         x0 = state[0]
         x1 = state[1]
         x2 = state[2]
@@ -44,37 +49,44 @@ class GeneratedGammaCalculator:
         x19 = state[19]
         x20 = state[20]
         x21 = state[21]
+        x22 = state[22]
+        x23 = state[23]
+        x24 = state[24]
 
-        # Calculate each gamma component
-        gamma_0 = x19 * x19  # Formula for yhat_ess1_up
-        gamma_1 = np.sin(x20 * ((0.065263286 / (-3.8394358 - (((0.8424501 + np.log(x0)) * (x10 + 0.08374195)) * (x3 + np.cos(x0))))) + 1.5602145))  # Formula for yhat_ess1_down
-        gamma_2 = x19 + (-0.0024068295 / (x19 - (np.sin((2.7311752 - x6) * x15) * -0.38768852)))  # Formula for yhat_ess2_up
-        gamma_3 = x20 * np.cos(np.sin(np.sin(0.42511383 / np.sin(-1.7690268 / np.sin(np.exp(np.sin(-1.7590646 / x13) + 0.90088147))))) + 0.557642)  # Formula for yhat_ess2_down
-        gamma_4 = np.sin(1.524106 * (x20 + (((-0.95748353 - (np.sin(x8) + np.sin(x10))) * (x4 + -0.9799438)) * 2.40827)))  # Formula for yhat_ess3_up
-        gamma_5 = x19 * ((np.cos(0.21814884 / np.sin(x0 / (((x13 * x14) + -1.1899849) / (x16 / x0)))) * 0.5879005) + 0.44087246)  # Formula for yhat_ess3_down
-        gamma_6 = np.cos(np.cos(x17 * np.cos(x4)) - (-0.2304556 / (x20 - 0.36276382)))  # Formula for yhat_ess4_up
-        gamma_7 = np.sin(x19 * np.exp(np.exp(np.sin(-0.8261234 - np.sin(-2.5477512 / x13)))))  # Formula for yhat_ess4_down
-        gamma_8 = x19 + 0.0071574925  # Formula for yhat_ess5_up
-        gamma_9 = x20 * np.cos(0.46657282 / ((x12 - x9) + (((-0.22085111 * (-0.1685712 - x7)) + x15) + -0.45686227)))  # Formula for yhat_ess5_down
-        gamma_10 = np.sin(((x13 * 1.4370056) + 6.0518293) * np.exp(x19 * (x12 + -0.17027885)))  # Formula for yhat_sop1_fwd
-        gamma_11 = np.cos(-0.80877674 + np.sin(x19 + np.cos((x16 * 1.0551211) / x4)))  # Formula for yhat_sop1_rev
-        gamma_12 = np.sin(-3.880499 + (x18 - np.sin((-2.4478257 / x13) - x20))) * x20  # Formula for yhat_sop2_fwd
-        gamma_13 = np.cos(np.cos(x15 / x6))  # Formula for yhat_sop2_rev
-        gamma_14 = x20 * x20  # Formula for yhat_pv1
-        gamma_15 = x19  # Formula for yhat_pv2
-        gamma_16 = x19 * 1.0  # Formula for yhat_pv3
-        gamma_17 = x20  # Formula for yhat_pv4
-        gamma_18 = x19  # Formula for yhat_pv5
-        gamma_19 = np.sin(((x21 + 0.29970706) / (x13 / 1.1064818)) * x20)  # Formula for yhat_pv6
-        gamma_20 = x20  # Formula for yhat_wt1
-        gamma_21 = x20  # Formula for yhat_wt2
-        gamma_22 = x19  # Formula for yhat_wt3
-        gamma_23 = x19  # Formula for yhat_wt4
-        gamma_24 = x19  # Formula for yhat_wt5
-        gamma_25 = x19 * x19  # Formula for yhat_wt6
+        # Calculate gamma components
+        gamma_0 = x19
+        gamma_1 = x20 + ((x19 * (np.cos(np.sin(x8 - np.cos(x8))) + (np.cos(x8) + -0.41160122))) / (((-1.5241412 + (x23 / np.cos(x1 - -2.2420778))) * -415.21283) + 0.9300668))
+        gamma_2 = (np.cos(x9 + -1.4177023) / (((((x2 + -0.65151423) + (x17 / x8)) + x20) / -0.0023544154) + 0.9539104)) + x20
+        gamma_3 = np.sin((x20 * np.cos(-1.3750819 / ((x7 + (x2 / (np.exp(np.exp(np.sin(x23))) + (x2 / np.exp(x15 - x10))))) / np.exp(x15 - x10)))) * 1.7288122)
+        gamma_4 = x19 - ((np.cos(x8 * -0.24597403) * -0.016637705) * np.exp((((np.cos(x2) + (x19 * -62.7554)) + np.sin(x9 / 0.95359635)) / 0.5006268) / x5))
+        gamma_5 = np.sin(x19 * np.exp(np.exp(np.sin(-8.553728 - np.sin(np.exp(6.4109454 - safe_log(np.cos(x9 + -1.3015349) + x10)))))))
+        gamma_6 = np.sin(np.cos(np.sin((np.exp(x4) / ((x12 / -1.5602541) - 0.23596108)) + np.cos(np.sin(x20 + (np.exp(x6) / ((x12 / -1.0553254) - 0.19232064))) * 1.7510455)) * -2.1311216) + 0.45967367)
+        gamma_7 = np.sin(np.sin(x20) - np.sin(x20 / np.sin(-0.7883127 / (x13 + 0.08758952))))
+        gamma_8 = (0.0012726008 / np.cos(((x4 + x18) / ((x18 * -0.0004971749) / np.cos(np.cos(x19)))) * -0.62270546)) + x19
+        gamma_9 = x20 * np.cos(np.sin(x0) / (x23 + -1.999649))
+        gamma_10 = np.sin(safe_log(x9) * (safe_log(x5) + (x20 * 2.9925225)))
+        gamma_11 = np.cos((np.cos((-1.4983665 - x17) * (x4 * 1.3068718)) + x21) + -0.6159319)
+        gamma_12 = x20 * np.sin(np.cos(2.3273084 / x13) + 2.1519413)
+        gamma_13 = np.cos(np.sin(x4 * x18))
+        gamma_14 = x19
+        gamma_15 = x20 * 1.0
+        gamma_16 = x20
+        gamma_17 = x20
+        gamma_18 = x20
+        gamma_19 = (0.011382344 / (0.60781425 - x13)) + x20
+        gamma_20 = x20
+        gamma_21 = x19
+        gamma_22 = x20 * x20
+        gamma_23 = x19
+        gamma_24 = x20
+        gamma_25 = x19
 
-        # Combine components into a vector
+        # Combine components into a list
         gamma_values = [gamma_0, gamma_1, gamma_2, gamma_3, gamma_4, gamma_5, gamma_6, gamma_7, gamma_8, gamma_9, gamma_10, gamma_11, gamma_12, gamma_13, gamma_14, gamma_15, gamma_16, gamma_17, gamma_18, gamma_19, gamma_20, gamma_21, gamma_22, gamma_23, gamma_24, gamma_25]
 
-        # Convert to a PyTorch tensor with a batch dimension, on the correct DEVICE
-        return torch.tensor(gamma_values, dtype=torch.float32).to(DEVICE).unsqueeze(0)
+        # [CRITICAL] 清洗 NaN 和 Inf 值，替换为0，确保 SAC 不会崩溃
+        gamma_array = np.array(gamma_values, dtype=np.float32)
+        gamma_array = np.nan_to_num(gamma_array, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # 转换为 PyTorch tensor 并返回
+        return torch.from_numpy(gamma_array).to(DEVICE).unsqueeze(0)

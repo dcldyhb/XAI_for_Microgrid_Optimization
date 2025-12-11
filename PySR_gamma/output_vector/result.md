@@ -6,9 +6,9 @@
 
 | 符号 ($x_i$) | 特征变量名 |
 | :--- | :--- |
-| $x_{0}$ | `temperature_C` |
-| $x_{1}$ | `wind_speed_ms` |
-| $x_{2}$ | `illuminance_lux` |
+| $x_{0}$ | `temperature` |
+| $x_{1}$ | `wind_speed` |
+| $x_{2}$ | `solar_irradiance` |
 | $x_{3}$ | `precipitation_mm` |
 | $x_{4}$ | `elec_vmin` |
 | $x_{5}$ | `elec_vmax` |
@@ -28,6 +28,9 @@
 | $x_{19}$ | `elec_any_violate` |
 | $x_{20}$ | `elec_violate_v` |
 | $x_{21}$ | `elec_violate_line` |
+| $x_{22}$ | `grid_load_demand` |
+| $x_{23}$ | `hour_of_day` |
+| $x_{24}$ | `day_of_week` |
 
 
 ---
@@ -37,7 +40,7 @@
 **最佳公式:**
 
 $$
-x_{19} x_{19}
+x_{19}
 $$
 
 ---
@@ -47,7 +50,7 @@ $$
 **最佳公式:**
 
 $$
-\sin{\left(x_{20} \left(1.560 + \frac{0.06526}{- \left(x_{10} + 0.08374\right) \left(x_{3} + \cos{\left(x_{0} \right)}\right) \left(\log{\left(x_{0} \right)} + 0.8425\right) - 3.839}\right) \right)}
+x_{19} - \frac{x_{19} e^{\frac{0.8443}{x_{23} + \sin{\left(e^{x_{24}} \right)}}}}{x_{0} \left(x_{16} - \cos{\left(\frac{e^{x_{5}}}{x_{12}} \right)}\right) \left(x_{17} + x_{20} + x_{22} \cdot 1.426\right)}
 $$
 
 ---
@@ -57,7 +60,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19} - \frac{0.002407}{x_{19} - \sin{\left(x_{15} \left(2.731 - x_{6}\right) \right)} \left(-0.3877\right)}
+x_{20} + \frac{\sin{\left(0.3800 x_{9} + 0.7997 \right)} + \cos{\left(x_{15} \right)} + 0.2875}{x_{14} x_{5} e^{x_{20} + \sin{\left(x_{0} \right)} + \sin{\left(\sin{\left(x_{9} \right)} \right)}}}
 $$
 
 ---
@@ -67,7 +70,7 @@ $$
 **最佳公式:**
 
 $$
-x_{20} \cos{\left(\sin{\left(\sin{\left(\frac{0.4251}{\sin{\left(- \frac{1.769}{\sin{\left(e^{\sin{\left(- \frac{1.759}{x_{13}} \right)} + 0.9009} \right)}} \right)}} \right)} \right)} + 0.5576 \right)}
+\sin{\left(x_{19} \left(1.954 + \frac{0.8289}{x_{23} - x_{6}}\right) \right)} 1.095
 $$
 
 ---
@@ -77,7 +80,7 @@ $$
 **最佳公式:**
 
 $$
-\sin{\left(1.524 \left(x_{20} + \left(- (\sin{\left(x_{10} \right)} + \sin{\left(x_{8} \right)}) - 0.9575\right) \left(x_{4} - 0.9799\right) 2.408\right) \right)}
+x_{19} + e^{e^{\frac{\left(0.8462 - \left(x_{19} - 0.8331\right)\right) e^{x_{12}}}{x_{6}}} \sin{\left(\frac{x_{10}}{\left(-1.723\right) \left(-1\right) 1.288} \right)}} 0.0001679
 $$
 
 ---
@@ -87,7 +90,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19} \left(\cos{\left(\frac{0.2181}{\sin{\left(\frac{x_{0}}{\frac{1}{\frac{1}{x_{0}} x_{16}} \left(x_{13} x_{14} - 1.190\right)} \right)}} \right)} 0.5879 + 0.4409\right)
+\sin{\left(\frac{\sin{\left(\sin{\left(x_{20} \left(-0.7548\right) \frac{1}{1.095 - \frac{x_{9}}{x_{14}}} \right)} \right)}}{0.4542} \right)}
 $$
 
 ---
@@ -97,7 +100,7 @@ $$
 **最佳公式:**
 
 $$
-\cos{\left(\cos{\left(x_{17} \cos{\left(x_{4} \right)} \right)} - - \frac{0.2305}{x_{20} - 0.3628} \right)}
+x_{20} + \frac{\cos{\left(-0.6806 \right)}}{- x_{9} \left(- x_{19} + \cos{\left(x_{10} \left(-0.1381\right) \right)} - 1.033\right) - 0.5728}
 $$
 
 ---
@@ -107,7 +110,7 @@ $$
 **最佳公式:**
 
 $$
-\sin{\left(x_{19} e^{e^{\sin{\left(- \sin{\left(- \frac{2.548}{x_{13}} \right)} - 0.8261 \right)}}} \right)}
+\sin{\left(x_{19} \cdot 6.583 \frac{1}{e^{\sin{\left(\sin{\left(x_{4} \left(-0.2586\right) \frac{1}{e^{\sin{\left(\frac{1.884}{e^{\sin{\left(\frac{1.912}{\sin{\left(x_{13} \right)}} \right)}}} \right)} 0.4450}} \right)} \right)}}} \right)}
 $$
 
 ---
@@ -117,7 +120,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19} + 0.007158
+x_{19} + 0.0003642 e^{- 1.785 e^{- x_{19}} \log{\left(x_{16} \right)} \sin{\left(\frac{0.6111}{\sin{\left(x_{13} + x_{17} \right)}} \right)}}
 $$
 
 ---
@@ -127,7 +130,7 @@ $$
 **最佳公式:**
 
 $$
-x_{20} \cos{\left(\frac{0.4666}{x_{12} + x_{15} - x_{9} - 0.2209 \left(- x_{7} - 0.1686\right) - 0.4569} \right)}
+\log{\left(e^{x_{19} \cos{\left(\frac{0.07597 \sin{\left(x_{0} \right)}}{\cos{\left(- x_{7} + x_{9} + 7.747 \right)}} \right)}} \right)}
 $$
 
 ---
@@ -137,7 +140,7 @@ $$
 **最佳公式:**
 
 $$
-\sin{\left(\left(x_{13} \cdot 1.437 + 6.052\right) e^{x_{19} \left(x_{12} - 0.1703\right)} \right)}
+x_{13} + \sin{\left(\frac{x_{12} x_{14}}{1.553} \right)} 0.2495
 $$
 
 ---
@@ -147,7 +150,7 @@ $$
 **最佳公式:**
 
 $$
-\cos{\left(\sin{\left(x_{19} + \cos{\left(x_{16} \cdot 1.055 \frac{1}{x_{4}} \right)} \right)} - 0.8088 \right)}
+\cos{\left(\frac{\cos{\left(2.162 \log{\left(x_{13} \right)} - \log{\left(x_{8} \right)} \right)}}{\sin{\left(x_{13} + 0.3524 \right)}} \right)}
 $$
 
 ---
@@ -157,7 +160,7 @@ $$
 **最佳公式:**
 
 $$
-x_{20} \sin{\left(x_{18} - \sin{\left(- x_{20} - \frac{2.448}{x_{13}} \right)} - 3.880 \right)}
+\sin{\left(x_{20} \left(x_{5} + \sin{\left(\frac{2.009}{x_{13}} \right)}\right) \right)}
 $$
 
 ---
@@ -167,7 +170,7 @@ $$
 **最佳公式:**
 
 $$
-\cos{\left(\cos{\left(\frac{x_{15}}{x_{6}} \right)} \right)}
+\cos{\left(\cos{\left(\frac{x_{18}}{x_{6}} \right)} \right)}
 $$
 
 ---
@@ -177,7 +180,7 @@ $$
 **最佳公式:**
 
 $$
-x_{20} x_{20}
+x_{19} x_{19}
 $$
 
 ---
@@ -187,7 +190,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19}
+x_{19} \cdot 1.000
 $$
 
 ---
@@ -197,7 +200,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19} \cdot 1.000
+x_{19} x_{19}
 $$
 
 ---
@@ -217,7 +220,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19}
+x_{20} x_{20}
 $$
 
 ---
@@ -227,7 +230,7 @@ $$
 **最佳公式:**
 
 $$
-\sin{\left(\frac{x_{20} \left(x_{21} + 0.2997\right)}{\frac{1}{1.106} x_{13}} \right)}
+x_{19} \sin{\left(\cos{\left(x_{16} \left(x_{5} - -0.1516\right) \right)} - -0.9469 \right)}
 $$
 
 ---
@@ -237,7 +240,7 @@ $$
 **最佳公式:**
 
 $$
-x_{20}
+x_{19}
 $$
 
 ---
@@ -247,7 +250,7 @@ $$
 **最佳公式:**
 
 $$
-x_{20}
+x_{19} x_{20}
 $$
 
 ---
@@ -267,7 +270,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19}
+x_{19} \cdot 1.000
 $$
 
 ---
@@ -277,7 +280,7 @@ $$
 **最佳公式:**
 
 $$
-x_{19}
+x_{20} \cdot 1.000
 $$
 
 ---
@@ -287,5 +290,5 @@ $$
 **最佳公式:**
 
 $$
-x_{19} x_{19}
+x_{19}
 $$

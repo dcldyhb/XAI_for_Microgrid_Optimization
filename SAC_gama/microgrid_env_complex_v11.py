@@ -24,6 +24,7 @@ Created on Wed Oct  8 21:58:54 2025
 microgrid_env_complex_v8.py
 
 改进内容：
+- 适配 config.py 统一路径管理
 - 自动检测太阳辐照度单位（W/m² 或 kW/m²），自动缩放。
 - 光伏模型采用按额定容量比例模型：P = rated_kw * (G_eff / 1.0) * η * 温度修正。
 - 保留 SOC 严格约束与能量守恒逻辑。
@@ -38,7 +39,15 @@ import gym
 from gym import spaces
 import pandapower as pp
 
+import sys
+import os
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+    
+from config import DATASET_PATH
 class IEEE33Env(gym.Env):
     metadata = {"render.modes": []}
 

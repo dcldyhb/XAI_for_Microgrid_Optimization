@@ -64,7 +64,7 @@ class QNetwork(nn.Module):
 class GaussianPolicy(nn.Module):
     """
     改进版 GaussianPolicy：
-    引入结构调制向量 gamma（来自结构调制网络 VSRDPGHead 的输出），
+    引入结构调制向量 gamma（来自结构调制网络 PySR 的输出），
     作用：动态调制 actor 的隐藏层特征，实现安全约束对动作生成的影响。
     """
 
@@ -78,7 +78,7 @@ class GaussianPolicy(nn.Module):
         self.log_std_linear = nn.Linear(hidden_dim, num_actions)
 
         # ---- 调制层：线性变换 gamma -> 缩放向量 ----
-        #   假设 gamma 的维度 = n_heads（结构调制网络输出维度）
+        #   假设 gamma 的维度 
         #   这里我们不固定 n_heads，而是运行时根据输入 gamma 自动匹配
         self.gamma_proj = None  # 延迟初始化
 
@@ -100,11 +100,7 @@ class GaussianPolicy(nn.Module):
     action, log_prob, mean = policy.sample(state_tensor, gamma)  # 将 gamma 传入 actor
     """
     def forward(self, state,gamma=None, evaluate=False):
-        """
-        前向传播（带安全调制）：
-        state: 环境状态向量 [B, num_inputs]
-        gamma: 结构调制向量 [B, n_heads]（来自结构调制网络的输出 sigmoid 值）
-        """
+       
         x = F.relu(self.linear1(state))
         # 若有 gamma，则建立调制投影层（一次性）
         if gamma is not None:

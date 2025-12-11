@@ -14,6 +14,11 @@ import pandas as pd
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
 # [MODIFIED] 引入统一的配置中心
 from config import DEVICE, DATASET_PATH, OUTPUTS_ROOT, FONT_SANS_SERIF, PYSR_OUTPUT_DIR
 
@@ -25,16 +30,23 @@ from SAC_gama.microgrid_env_complex_v11 import IEEE33Env
 # [ADDED] 动态导入 PySR 生成的 Gamma 计算器
 try:
     import sys
+    # 确保 PySR 输出目录在系统路径中
     if PYSR_OUTPUT_DIR not in sys.path:
         sys.path.append(PYSR_OUTPUT_DIR)
     
-    from PySR_gamma.output_vector.gamma_calculator import GeneratedGammaCalculator
+    # 直接导入 gamma_calculator (因为 output_vector 已经在 path 里了)
+    import gamma_calculator
+    # 重新加载模块，防止训练过程中公式更新了但没刷新
+    import importlib
+    importlib.reload(gamma_calculator)
+    
+    from gamma_calculator import GeneratedGammaCalculator
     pysr_calculator_available = True
-    print("成功导入 PySR 生成的 gamma_calculator 模块。")
-except ImportError:
+    print(f"成功导入 PySR 生成的 gamma_calculator 模块: {gamma_calculator.__file__}")
+except ImportError as e:
     GeneratedGammaCalculator = None
     pysr_calculator_available = False
-    print("警告: 未找到 PySR 生成的 gamma_calculator.py。将使用随机 gamma 作为占位符。")
+    print(f"警告: 未找到 PySR 生成的 gamma_calculator.py ({e})。将使用随机 gamma。")
 
 # --- 环境设置 ---
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -114,10 +126,13 @@ writer = SummaryWriter(log_dir)
 memory = ReplayMemory(args.replay_size, args.seed)
 
 # [ADDED] 创建 PySR Gamma 计算器实例
-if pysr_calculator_available:
-    gamma_calculator = GeneratedGammaCalculator()
-else:
-    gamma_calculator = None
+gamma_calculator = None
+if pysr_calculator_available and GeneratedGammaCalculator is not None:
+    try:
+        gamma_calculator = GeneratedGammaCalculator()
+    except Exception as e:
+        print(f"实例化 Gamma 计算器出错: {e}，回退至随机模式。")
+        gamma_calculator = None
 
 # 备用的随机 gamma 生成函数
 def generate_random_gamma(batch_size, n_heads):
