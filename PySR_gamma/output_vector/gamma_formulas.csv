@@ -1,27 +1,27 @@
-gamma_signal,equation,latex_equation
-yhat_ess1_up,x19,x_{19}
-yhat_ess1_down,x19 - (((x19 / ((x17 + (x22 * 1.4255823)) + x20)) * (exp(0.8443347 / (sin(exp(x24)) + x23)) / (x16 - cos(exp(x5) / x12)))) / x0),x_{19} - \frac{x_{19} e^{\frac{0.8443}{x_{23} + \sin{\left(e^{x_{24}} \right)}}}}{x_{0} \left(x_{16} - \cos{\left(\frac{e^{x_{5}}}{x_{12}} \right)}\right) \left(x_{17} + x_{20} + x_{22} \cdot 1.426\right)}
-yhat_ess2_up,((cos(x15) + (0.28753433 + sin(0.79973745 + (0.37997785 * x9)))) / (exp(sin(sin(x9)) + (x20 + sin(x0))) * (x14 * x5))) + x20,x_{20} + \frac{\sin{\left(0.3800 x_{9} + 0.7997 \right)} + \cos{\left(x_{15} \right)} + 0.2875}{x_{14} x_{5} e^{x_{20} + \sin{\left(x_{0} \right)} + \sin{\left(\sin{\left(x_{9} \right)} \right)}}}
-yhat_ess2_down,sin(x19 * ((0.82888037 / (x23 - x6)) + 1.9538157)) * 1.0950848,\sin{\left(x_{19} \left(1.954 + \frac{0.8289}{x_{23} - x_{6}}\right) \right)} 1.095
-yhat_ess3_up,x19 + (exp(sin((x10 / -1.2883415) / -1.7227215) * exp(((0.8462079 - (x19 + -0.8331039)) / x6) * exp(x12))) * 0.00016791119),x_{19} + e^{e^{\frac{\left(0.8462 - \left(x_{19} - 0.8331\right)\right) e^{x_{12}}}{x_{6}}} \sin{\left(\frac{x_{10}}{\left(-1.723\right) \left(-1\right) 1.288} \right)}} 0.0001679
-yhat_ess3_down,sin(sin(sin((x20 * -0.75478727) / (1.0952342 - (x9 / x14)))) / 0.45416707),\sin{\left(\frac{\sin{\left(\sin{\left(x_{20} \left(-0.7548\right) \frac{1}{1.095 - \frac{x_{9}}{x_{14}}} \right)} \right)}}{0.4542} \right)}
-yhat_ess4_up,x20 + (cos(-0.68060803) / (-0.57277405 - (((-1.0331573 - x19) + cos(x10 * -0.1381147)) * x9))),x_{20} + \frac{\cos{\left(-0.6806 \right)}}{- x_{9} \left(- x_{19} + \cos{\left(x_{10} \left(-0.1381\right) \right)} - 1.033\right) - 0.5728}
-yhat_ess4_down,sin((x19 * 6.5835114) / exp(sin(sin(x4 * (-0.2586309 / exp(sin(1.8841002 / exp(sin(1.9119133 / sin(x13)))) * 0.4450014)))))),\sin{\left(x_{19} \cdot 6.583 \frac{1}{e^{\sin{\left(\sin{\left(x_{4} \left(-0.2586\right) \frac{1}{e^{\sin{\left(\frac{1.884}{e^{\sin{\left(\frac{1.912}{\sin{\left(x_{13} \right)}} \right)}}} \right)} 0.4450}} \right)} \right)}}} \right)}
-yhat_ess5_up,x19 + (0.0003642327 * exp((log(x16) * 1.7847112) * (sin(-0.6110924 / sin(x13 + x17)) / exp(x19)))),x_{19} + 0.0003642 e^{- 1.785 e^{- x_{19}} \log{\left(x_{16} \right)} \sin{\left(\frac{0.6111}{\sin{\left(x_{13} + x_{17} \right)}} \right)}}
-yhat_ess5_down,log(exp(cos(sin(x0) / (cos(x9 + (7.7466316 - x7)) / -0.07596555)) * x19)),\log{\left(e^{x_{19} \cos{\left(\frac{0.07597 \sin{\left(x_{0} \right)}}{\cos{\left(- x_{7} + x_{9} + 7.747 \right)}} \right)}} \right)}
-yhat_sop1_fwd,x13 + (sin((x12 * x14) / 1.5529634) * 0.2494619),x_{13} + \sin{\left(\frac{x_{12} x_{14}}{1.553} \right)} 0.2495
-yhat_sop1_rev,cos(cos((log(x13) / 0.46245065) - log(x8)) / sin(x13 - -0.35236743)),\cos{\left(\frac{\cos{\left(2.162 \log{\left(x_{13} \right)} - \log{\left(x_{8} \right)} \right)}}{\sin{\left(x_{13} + 0.3524 \right)}} \right)}
-yhat_sop2_fwd,sin(x20 * (sin(2.0086432 / x13) + x5)),\sin{\left(x_{20} \left(x_{5} + \sin{\left(\frac{2.009}{x_{13}} \right)}\right) \right)}
-yhat_sop2_rev,cos(cos(x18 / x6)),\cos{\left(\cos{\left(\frac{x_{18}}{x_{6}} \right)} \right)}
-yhat_pv1,x19 * x19,x_{19} x_{19}
-yhat_pv2,x19 * 1.0,x_{19} \cdot 1.000
-yhat_pv3,x19 * x19,x_{19} x_{19}
-yhat_pv4,x20,x_{20}
-yhat_pv5,x20 * x20,x_{20} x_{20}
-yhat_pv6,x19 * sin(cos((x5 - -0.15156513) * x16) - -0.94693637),x_{19} \sin{\left(\cos{\left(x_{16} \left(x_{5} - -0.1516\right) \right)} - -0.9469 \right)}
-yhat_wt1,x19,x_{19}
-yhat_wt2,x19 * x20,x_{19} x_{20}
-yhat_wt3,x19,x_{19}
-yhat_wt4,x19 * 1.0,x_{19} \cdot 1.000
-yhat_wt5,x20 * 1.0,x_{20} \cdot 1.000
-yhat_wt6,x19,x_{19}
+signal,r2_score,equation,latex
+yhat_ess1_up,1.0,x19,x_{19}
+yhat_ess1_down,0.9999325393164026,sqrt(x20),\sqrt{x_{20}}
+yhat_ess2_up,0.975288580309011,square(x20),x_{20}^{2}
+yhat_ess2_down,0.9853046651402548,x19 + ((x19 / (x14 - square((x8 + 0.4807294) - (x14 * 1.3929163)))) / 0.9259921),x_{19} + \frac{x_{19}}{0.9260 \left(x_{14} - \left(- 1.393 x_{14} + x_{8} + 0.4807\right)^{2}\right)}
+yhat_ess3_up,0.949453636801956,x20 + abs(square((x19 * 0.3418984) + ((((1.0582619 / x6) - 1.2214626) + x12) * -4.724853)) / abs(sqrt(x12))),x_{20} + \left|{\frac{\left(4.725 x_{12} - 0.3419 x_{19} - 5.771 + \frac{5.000}{x_{6}}\right)^{2}}{\left|{\sqrt{x_{12}}}\right|}}\right|
+yhat_ess3_down,0.9777879238369735,abs(((0.46377304 / ((0.46377304 * x10) - (x20 / (x12 / 3.7431345)))) - 1.0598879) * x19),\left|{x_{19} \left(1.060 - \frac{0.4638}{0.4638 x_{10} - \frac{x_{20}}{\frac{1}{3.743} x_{12}}}\right)}\right|
+yhat_ess4_up,0.9237583975877031,x20 + (x8 / square(((x6 * (x17 / 0.21958663)) - (x8 + ((x17 - (x20 / abs(-0.047591332 / x16))) + x7))) - 1.2018304)),x_{20} + \frac{x_{8}}{\left(\frac{x_{17} x_{6}}{0.2196} - \left(x_{17} - \frac{x_{20}}{0.04759 \frac{1}{\left|{x_{16}}\right|}} + x_{7} + x_{8}\right) - 1.202\right)^{2}}
+yhat_ess4_down,0.9571418249227224,(x12 * x20) * sqrt(x23 + 3.1349056),x_{12} x_{20} \sqrt{x_{23} + 3.135}
+yhat_ess5_up,0.9854470729088501,x19 + abs(sqrt(x10) / (((x19 + 0.22754987) * x22) + (((2.6383564 - (x10 - x15)) * x15) * -0.5227047))),x_{19} + \left|{\frac{\sqrt{x_{10}}}{0.5227 x_{15} \left(- x_{10} + x_{15} + 2.638\right) - x_{22} \left(x_{19} + 0.2276\right)}}\right|
+yhat_ess5_down,0.9846730042051403,x20 - (0.40040523 * square(x20 * (0.40040523 / ((x7 * 0.6583265) - x17)))),x_{20} - 0.4004 \frac{0.1603 x_{20}^{2}}{\left(- x_{17} + x_{7} \cdot 0.6583\right)^{2}}
+yhat_sop1_fwd,0.8729473201577497,abs(sqrt(abs(0.18837182 - x13)) * (x13 - (x20 * 2.114027))),\sqrt{\left|{x_{13} - 0.1884}\right|} \left|{x_{13} - 2.114 x_{20}}\right|
+yhat_sop1_rev,0.7159779831182242,(3.1770074 - (163.06245 / x7)) - x13,- x_{13} + 3.177 - \frac{163.1}{x_{7}}
+yhat_sop2_fwd,0.9014270727097088,(x19 * x23) / abs(x13 / ((-1.2840545 / x6) + 1.3180605)),\frac{x_{19} x_{23}}{\left|{\frac{x_{13}}{1.318 - \frac{1.284}{x_{6}}}}\right|}
+yhat_sop2_rev,0.3659004930553822,x8 * 0.010850728,x_{8} \cdot 0.01085
+yhat_pv1,1.0,x19,x_{19}
+yhat_pv2,1.0,x19,x_{19}
+yhat_pv3,1.0,x19,x_{19}
+yhat_pv4,1.0,x19,x_{19}
+yhat_pv5,1.0,x20,x_{20}
+yhat_pv6,0.9644647756184083,sqrt(x20 * abs((21.028105 / x11) + -20.065475)),\sqrt{x_{20}} \sqrt{\left|{20.07 - \frac{21.03}{x_{11}}}\right|}
+yhat_wt1,1.0,x19,x_{19}
+yhat_wt2,1.0,x19,x_{19}
+yhat_wt3,1.0,x20,x_{20}
+yhat_wt4,1.0,x20,x_{20}
+yhat_wt5,1.0,sqrt(x20),\sqrt{x_{20}}
+yhat_wt6,1.0,x19,x_{19}

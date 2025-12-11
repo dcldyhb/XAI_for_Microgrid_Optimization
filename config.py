@@ -18,6 +18,13 @@ PYSR_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "PySR_gamma", "output_vector")
 # 实验结果输出根目录
 OUTPUTS_ROOT = os.path.join(PROJECT_ROOT, "outputs")
 
+# 调整后数据集路径
+AUGMENTED_DATASET_DIR = os.path.join("PROJECTROOT", "dataset", "dataset_ieee33_augmented_phys.csv")
+
+# 划分后的数据集路径
+TRAIN_PATH = os.path.join(PROJECT_ROOT, "dataset", "dataset_ieee33_extreme_train.csv")
+TEST_PATH = os.path.join(PROJECT_ROOT, "dataset", "dataset_ieee33_extreme_test.csv")
+
 # ==============================================================================
 # 2. 硬件加速配置 (Hardware Acceleration)
 # ==============================================================================

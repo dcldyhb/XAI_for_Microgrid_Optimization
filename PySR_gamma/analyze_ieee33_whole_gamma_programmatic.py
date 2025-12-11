@@ -5,144 +5,247 @@ import numpy as np
 from pysr import PySRRegressor
 import warnings
 
-# --- 0. 路径配置 ---
+# ==========================================
+# 0. 路径与环境配置
+# ==========================================
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
+
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from config import DATASET_PATH, PYSR_OUTPUT_DIR
+# 导入配置
+try:
+    from config import TRAIN_PATH, TEST_PATH, PYSR_OUTPUT_DIR, DEVICE
+except ImportError:
+    print("[WARNING] 无法导入 config.py，使用默认设置。")
+    DEVICE = 'cpu'
+    PYSR_OUTPUT_DIR = os.path.join(current_dir, 'output_vector')
+    TRAIN_PATH = None 
+    TEST_PATH = None
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 os.makedirs(PYSR_OUTPUT_DIR, exist_ok=True)
-print(f"PySR 输出目录: '{PYSR_OUTPUT_DIR}'\n")
+print(f"[INFO] PySR 输出目录: {PYSR_OUTPUT_DIR}")
 
-# --- 1. 数据加载与预处理 ---
-try:
-    df = pd.read_csv(DATASET_PATH)
-except FileNotFoundError:
-    print(f"错误: 找不到文件 at '{DATASET_PATH}'。")
-    sys.exit()
+# ==========================================
+# 1. 数据加载与预处理
+# ==========================================
+if not TRAIN_PATH or not os.path.exists(TRAIN_PATH):
+    print(f"[ERROR] 找不到训练数据文件: {TRAIN_PATH}")
+    sys.exit(1)
 
-df.replace({False: 0, True: 1}, inplace=True)
+print(f"[INFO] 正在加载训练集: {TRAIN_PATH}")
+df_train = pd.read_csv(TRAIN_PATH)
+print(f"[INFO] 正在加载测试集: {TEST_PATH}")
+df_test = pd.read_csv(TEST_PATH)
 
-# --- 2. 准备特征和目标 ---
-gamma_target_columns = [col for col in df.columns if col.startswith('yhat_')]
+df_train.replace({False: 0, True: 1}, inplace=True)
+df_test.replace({False: 0, True: 1}, inplace=True)
+
+# ==========================================
+# 2. 特征与目标准备
+# ==========================================
+
+# --- A. 确定目标 (y) ---
+# [修改点] 仅选择 yhat_ 开头的列作为目标，明确不分析 gamma
+gamma_target_columns = [col for col in df_train.columns if col.startswith('yhat_')]
+
 if not gamma_target_columns:
-    print("错误: CSV中未找到 'yhat_' 开头的目标列。")
-    sys.exit()
+    print("[ERROR] 未找到 'yhat_' 开头的目标列。")
+    sys.exit(1)
 
-# [修改点] 确保删除 'timestamp' 而不是 'time'
-columns_to_drop_for_X = gamma_target_columns + ['timestamp', 'regime']
-existing_columns_to_drop = [col for col in columns_to_drop_for_X if col in df.columns]
-X_df = df.drop(columns=existing_columns_to_drop, errors='ignore')
-X_df = X_df.apply(pd.to_numeric, errors='coerce').fillna(0)
-X = X_df.to_numpy()
-feature_names = X_df.columns.to_list()
+print(f"[INFO] 分析目标 ({len(gamma_target_columns)} 个): {gamma_target_columns}")
 
-print(f"找到 {len(gamma_target_columns)} 个目标, {len(feature_names)} 个特征。")
+# --- B. 确定特征 (X) ---
+# 排除列表：动作、时间、类型、以及 gamma 本身
+user_excluded_features = [
+    'action_batt_0', 
+    'action_batt_1', 
+    'action_batt_2', 
+    'action_batt_3', 
+    'action_batt_4', 
+    'gamma',       # [重要] 排除 gamma，既不当y也不当X
+    'timestamp', 
+    'regime'
+]
 
-# --- 3. 循环建模 ---
+# 合并所有需要排除的列 (特征 = 所有列 - 排除列 - 目标列)
+cols_to_drop = list(set(user_excluded_features + gamma_target_columns))
+
+# 构建特征矩阵 X
+X_train_df = df_train.drop(columns=cols_to_drop, errors='ignore').apply(pd.to_numeric, errors='coerce').fillna(0)
+X_test_df = df_test.drop(columns=cols_to_drop, errors='ignore').apply(pd.to_numeric, errors='coerce').fillna(0)
+
+X_train = X_train_df.to_numpy()
+X_test = X_test_df.to_numpy()
+feature_names = X_train_df.columns.to_list()
+
+print(f"[INFO] 使用特征 ({len(feature_names)} 个): {feature_names}")
+print(f"[INFO] 样本数量: {len(X_train)} (训练) / {len(X_test)} (测试)")
+
+# ==========================================
+# 3. 循环建模 (PySR)
+# ==========================================
 models = {}
-for target_column in gamma_target_columns:
-    print(f"\n{'='*60}\n正在分析: {target_column}\n{'='*60}")
-    y = df[target_column].apply(pd.to_numeric, errors='coerce').fillna(0).to_numpy()
+test_scores = {}
+
+for target_col in gamma_target_columns:
+    print("-" * 60)
+    print(f"[INFO] 正在分析目标: {target_col}")
+    print("-" * 60)
+    
+    y_train = df_train[target_col].apply(pd.to_numeric, errors='coerce').fillna(0).to_numpy()
+    y_test = df_test[target_col].apply(pd.to_numeric, errors='coerce').fillna(0).to_numpy()
     
     model = PySRRegressor(
-        niterations=40, 
+        niterations=50,
         binary_operators=["+", "*", "/", "-"],
-        unary_operators=["cos", "exp", "sin", "log"], 
+        # 仅保留物理意义明确的算子
+        unary_operators=["square", "abs", "sqrt"], 
+        # 防止公式过度嵌套膨胀
+        nested_constraints={
+            "square": {"square": 0, "sqrt": 0},
+            "sqrt": {"square": 0, "sqrt": 0},
+        },
+        maxsize=25,       # 限制公式长度
+        parsimony=0.001,  # 复杂度惩罚
         model_selection="best",
-        # 保持临时文件整洁
-        temp_equation_file=os.path.join(PYSR_OUTPUT_DIR, f"temp_hof_{target_column}.csv"),
-        #verbosity=0 # 减少不必要的输出
+        temp_equation_file=os.path.join(PYSR_OUTPUT_DIR, f"temp_hof_{target_col}.csv"),
+        verbosity=1
     )
-    model.fit(X, y)
-    models[target_column] = model
+    
+    model.fit(X_train, y_train)
+    models[target_col] = model
+    
     try:
-        print(f"  -> 找到公式: {model.get_best()['equation']}")
-    except (KeyError, IndexError):
-        print("  -> 未找到有效公式。")
+        score = model.score(X_test, y_test)
+        test_scores[target_col] = score
+        print(f"[RESULT] 最佳公式: {model.get_best()['equation']}")
+        print(f"[RESULT] 测试集 R2 得分: {score:.4f}")
+    except:
+        print("[WARNING] 无法获取公式或评分。")
 
-# --- 4. 生成包含安全措施的 Python 模块 ---
-print("\n\n" + "#"*80)
-print("分析完成！正在生成包含安全措施的 gamma_calculator.py...")
-print("#"*80)
+# ==========================================
+# 4. 生成输出文件
+# ==========================================
+print("\n" + "#"*60)
+print("[INFO] 正在生成输出文件...")
+print("#"*60)
 
-# [修改点 1] 在生成的代码中注入安全函数
+# --- 准备 Markdown 和 Python 代码头 ---
+gamma_formulas_data = []
+markdown_lines = [
+    "# PySR 信号公式汇总\n",
+    "## 1. 输入特征映射\n",
+    "| 符号 ($x_i$) | 物理含义 |\n| :--- | :--- |",
+]
+
+for i, name in enumerate(feature_names):
+    markdown_lines.append(f"| $x_{{{i}}}$ | `{name}` |")
+markdown_lines.append("\n## 2. 挖掘结果\n")
+
 python_code_lines = [
-    "# This file is auto-generated by PySR. Do not edit it manually.",
+    "# This file is auto-generated by PySR.",
     "import numpy as np", 
     "import torch",
     "import sys",
     "import os",
     "",
-    "# --- 安全函数，防止数学错误 ---",
-    "def safe_log(x):",
-    "    # 防止对 0 或负数取对数",
-    "    return np.log(np.abs(x) + 1e-9)",
+    "# --- Math Safety Functions ---",
+    "def safe_sqrt(x): return np.sqrt(np.abs(x))",
+    "def safe_div(a, b): return np.divide(a, b + 1e-9)",
+    "def safe_log(x): return np.log(np.abs(x) + 1e-9)",
     "",
-    "# --- 动态路径，导入全局配置 ---",
+    "# --- Path Configuration ---",
     "current_dir = os.path.dirname(os.path.abspath(__file__))",
     "project_root = os.path.dirname(os.path.dirname(current_dir))",
-    "if project_root not in sys.path:",
-    "    sys.path.append(project_root)",
-    "try:",
-    "    from config import DEVICE",
-    "except ImportError:",
-    "    DEVICE = torch.device('cpu')",
+    "if project_root not in sys.path: sys.path.append(project_root)",
+    "try: from config import DEVICE",
+    "except ImportError: DEVICE = torch.device('cpu')",
     "",
     "class GeneratedGammaCalculator:",
     "    def __init__(self):", 
-    "        np.seterr(all='ignore') # 忽略所有numpy计算警告",
+    "        np.seterr(all='ignore')",
     f"        self.feature_names = {feature_names!r}",
     f"        self.gamma_signals = {gamma_target_columns!r}\n",
     "    def compute(self, state):",
+    "        # Unpack features based on training configuration"
 ]
 
-# 状态解包
-python_code_lines.append("        # Unpack state variables")
+# Python 解包逻辑
 for i, name in enumerate(feature_names):
-    python_code_lines.append(f"        x{i} = state[{i}]") 
-python_code_lines.append("\n        # Calculate gamma components")
+    python_code_lines.append(f"        x{i} = state[{i}] # {name}") 
+python_code_lines.append("\n        # Formulas")
 
-# 遍历模型生成公式
+# --- 填充公式 ---
 gamma_component_vars = []
-for i, target_column in enumerate(gamma_target_columns):
-    fitted_model = models.get(target_column)
-    component_var_name = f"gamma_{i}"
-    gamma_component_vars.append(component_var_name)
 
+for i, target_col in enumerate(gamma_target_columns):
+    model = models.get(target_col)
+    var_name = f"gamma_{i}"
+    gamma_component_vars.append(var_name)
+    score = test_scores.get(target_col, -999.0)
+    
     try:
-        equation_str = fitted_model.get_best()["equation"]
-        # [修改点 2] 将 log() 替换为我们定义的 safe_log()
-        py_equation = equation_str.replace('sin(', 'np.sin(')\
-                                  .replace('cos(', 'np.cos(')\
-                                  .replace('exp(', 'np.exp(')\
-                                  .replace('log(', 'safe_log(')
-        python_code_lines.append(f"        {component_var_name} = {py_equation}")
-    except (KeyError, IndexError):
-        python_code_lines.append(f"        {component_var_name} = 0.0  # Fallback for {target_column}")
+        best_eq = model.get_best()
+        eq_str = best_eq["equation"]
+        latex_eq = model.latex(index=best_eq.name, precision=4)
+        
+        # 安全函数替换
+        py_eq = eq_str.replace('sin(', 'np.sin(')\
+                      .replace('cos(', 'np.cos(')\
+                      .replace('exp(', 'np.exp(')\
+                      .replace('log(', 'safe_log(')\
+                      .replace('sqrt(', 'safe_sqrt(')\
+                      .replace('abs(', 'np.abs(')\
+                      .replace('square(', 'np.square(')
+        
+        has_result = True
+    except:
+        eq_str = "0.0"
+        latex_eq = "N/A"
+        py_eq = "0.0"
+        has_result = False
 
-# [修改点 3] 增加最终的数值清洗步骤
+    # 数据记录
+    gamma_formulas_data.append({
+        'signal': target_col, 
+        'r2_score': score,
+        'equation': eq_str, 
+        'latex': latex_eq
+    })
+
+    python_code_lines.append(f"        {var_name} = {py_eq}")
+
+    markdown_lines.append(f"### 目标: `{target_col}`")
+    markdown_lines.append(f"- **R2 Score**: {score:.4f}")
+    if has_result:
+        markdown_lines.append(f"$$\n{latex_eq}\n$$")
+    markdown_lines.append("---\n")
+
+# --- 写入文件 ---
 python_code_lines.extend([
-    "\n        # Combine components into a list",
+    "\n        # Output Assembly",
     f"        gamma_values = [{', '.join(gamma_component_vars)}]",
-    "",
-    "        # [CRITICAL] 清洗 NaN 和 Inf 值，替换为0，确保 SAC 不会崩溃",
-    "        gamma_array = np.array(gamma_values, dtype=np.float32)",
-    "        gamma_array = np.nan_to_num(gamma_array, nan=0.0, posinf=0.0, neginf=0.0)",
-    "",
-    "        # 转换为 PyTorch tensor 并返回",
+    "        # 数值清洗: 替换 NaN/Inf 为 0",
+    "        gamma_array = np.nan_to_num(np.array(gamma_values, dtype=np.float32), nan=0.0, posinf=0.0, neginf=0.0)",
     "        return torch.from_numpy(gamma_array).to(DEVICE).unsqueeze(0)"
 ])
 
-py_file_path = os.path.join(PYSR_OUTPUT_DIR, "gamma_calculator.py")
-try:
-    with open(py_file_path, 'w', encoding='utf-8') as f:
-        f.write("\n".join(python_code_lines))
-    print(f"\n✅ 安全版 Python 模块已写入: {py_file_path}")
-except Exception as e:
-    print(f"\n❌ 写入 gamma_calculator.py 失败: {e}")
+# 1. Python Module
+py_path = os.path.join(PYSR_OUTPUT_DIR, "gamma_calculator.py")
+with open(py_path, 'w', encoding='utf-8') as f:
+    f.write("\n".join(python_code_lines))
 
-print("\n分析全部完成！")
+# 2. CSV Summary
+csv_path = os.path.join(PYSR_OUTPUT_DIR, "gamma_formulas.csv")
+pd.DataFrame(gamma_formulas_data).to_csv(csv_path, index=False)
+
+# 3. Markdown Report
+md_path = os.path.join(PYSR_OUTPUT_DIR, "result.md")
+with open(md_path, 'w', encoding='utf-8') as f:
+    f.write("\n".join(markdown_lines))
+
+print(f"[SUCCESS] 输出文件已保存至: {PYSR_OUTPUT_DIR}")
+print("[INFO] 分析结束")
