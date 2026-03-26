@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import itertools
+import json
 import os
 import warnings
 import time
@@ -78,6 +79,11 @@ parser.add_argument("--target_update_interval", type=int, default=1)
 parser.add_argument("--replay_size", type=int, default=1000000)
 parser.add_argument("--eval_every", type=int, default=10)
 parser.add_argument("--eval_episodes", type=int, default=1)
+parser.add_argument("--gamma_mode", choices=["pysr", "random", "none"], default="pysr")
+parser.add_argument("--random_gamma_dim", type=int, default=26)
+parser.add_argument("--disable_plots", action="store_true")
+parser.add_argument("--output_dir", type=str, default=None)
+parser.add_argument("--report_json", type=str, default=None)
 args = parser.parse_args()
 args.device = DEVICE
 
@@ -113,9 +119,9 @@ except Exception as _e:
 
 # ========== 输出目录配置 ==========
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-run_name = f"{timestamp}_{args.env_name}_{args.policy}"
+run_name = f"{timestamp}_{args.env_name}_{args.policy}_{args.gamma_mode.upper()}"
 
-save_dir = os.path.join(OUTPUTS_ROOT, run_name)
+save_dir = os.path.abspath(args.output_dir) if args.output_dir else os.path.join(OUTPUTS_ROOT, run_name)
 os.makedirs(save_dir, exist_ok=True)
 print(f"本次运行的所有结果将保存至: {save_dir}")
 
@@ -124,6 +130,7 @@ os.makedirs(log_dir, exist_ok=True)
 writer = SummaryWriter(log_dir)
 
 memory = ReplayMemory(args.replay_size, args.seed)
+episode_metrics = []
 
 # [ADDED] 创建 PySR Gamma 计算器实例
 gamma_calculator = None
@@ -136,7 +143,77 @@ if pysr_calculator_available and GeneratedGammaCalculator is not None:
 
 # 备用的随机 gamma 生成函数
 def generate_random_gamma(batch_size, n_heads):
-    return torch.rand(batch_size, n_heads).to(DEVICE)
+    return torch.rand(batch_size, max(1, int(n_heads))).to(DEVICE)
+
+def build_gamma_input(env_obj, feature_names):
+    if not feature_names:
+        return np.asarray(env_obj._get_state(env_obj.current_step), dtype=np.float32).flatten()
+
+    idx = int(env_obj.current_step % len(env_obj.data))
+    row = env_obj.data.iloc[idx]
+    values = []
+
+    for feature_name in feature_names:
+        if feature_name.startswith("elec_soc_"):
+            try:
+                soc_idx = int(feature_name.split("_")[-1]) - 1
+                value = float(env_obj.current_soc[soc_idx])
+            except Exception:
+                value = float(row.get(feature_name, 0.0))
+        elif feature_name == "elec_any_violate":
+            vmin = float(row.get("elec_vmin", np.nan))
+            vmax = float(row.get("elec_vmax", np.nan))
+            if np.isfinite(vmin) and np.isfinite(vmax):
+                value = 1.0 if (vmin < env_obj.vmin or vmax > env_obj.vmax) else 0.0
+            else:
+                value = float(row.get(feature_name, 0.0))
+        elif feature_name == "elec_violate_v":
+            vmin = float(row.get("elec_vmin", np.nan))
+            vmax = float(row.get("elec_vmax", np.nan))
+            if np.isfinite(vmin) and np.isfinite(vmax):
+                value = float(max(0.0, env_obj.vmin - vmin) + max(0.0, vmax - env_obj.vmax))
+            else:
+                value = float(row.get(feature_name, 0.0))
+        else:
+            value = float(row.get(feature_name, 0.0))
+
+        if not np.isfinite(value):
+            value = 0.0
+        values.append(value)
+
+    return np.asarray(values, dtype=np.float32)
+
+def compute_info_metrics(infos):
+    if len(infos) == 0:
+        return {
+            "mean_voltage_violation": 0.0,
+            "violation_step_ratio": 0.0,
+            "mean_grid_kW": 0.0,
+            "import_kWh": 0.0,
+            "export_kWh": 0.0,
+            "energy_cost_rmb": 0.0,
+        }
+    voltage_violation = np.array([float(info.get("voltage_violation", 0.0)) for info in infos], dtype=np.float32)
+    grid_kW = np.array([float(info.get("grid_kW", 0.0)) for info in infos], dtype=np.float32)
+    price = np.array([float(info.get("price", 0.0)) for info in infos], dtype=np.float32)
+    import_kwh = np.maximum(grid_kW, 0.0)
+    export_kwh = np.maximum(-grid_kW, 0.0)
+    energy_cost = import_kwh * price - export_kwh * (price * float(getattr(env, "sell_price_ratio", 0.8)))
+    return {
+        "mean_voltage_violation": float(np.mean(voltage_violation)),
+        "violation_step_ratio": float(np.mean(voltage_violation > 0.0)),
+        "mean_grid_kW": float(np.mean(grid_kW)),
+        "import_kWh": float(np.sum(import_kwh)),
+        "export_kWh": float(np.sum(export_kwh)),
+        "energy_cost_rmb": float(np.sum(energy_cost)),
+    }
+
+gamma_feature_names = list(getattr(gamma_calculator, "feature_names", [])) if gamma_calculator is not None else []
+gamma_signal_count = len(getattr(gamma_calculator, "gamma_signals", [])) if gamma_calculator is not None else 0
+active_random_gamma_dim = gamma_signal_count if gamma_signal_count > 0 else args.random_gamma_dim
+if args.gamma_mode == "pysr" and gamma_calculator is None:
+    print("警告: gamma_mode=pysr 但未加载到公式，自动回退为 random。")
+    args.gamma_mode = "random"
 
 # ========== 训练与收集 info ==========
 rewards = []
@@ -145,7 +222,7 @@ infos_all = []
 total_numsteps = 0
 updates = 0
 
-print("开始训练...")
+print(f"开始训练，gamma_mode={args.gamma_mode}...")
 
 for i_episode in itertools.count(1):
     env.seed(args.seed + i_episode)
@@ -156,11 +233,12 @@ for i_episode in itertools.count(1):
     infos = []
 
     while not done:
-        # [MODIFIED] 使用 PySR 公式计算 gamma，如果不可用则回退到随机
-        if gamma_calculator:
-            gamma = gamma_calculator.compute(state)
-        else:
-            gamma = generate_random_gamma(1, n_heads=10) # n_heads 应与 PySR 输出维度一致
+        gamma = None
+        if args.gamma_mode == "pysr":
+            gamma_input = build_gamma_input(env, gamma_feature_names)
+            gamma = gamma_calculator.compute(gamma_input)
+        elif args.gamma_mode == "random":
+            gamma = generate_random_gamma(1, n_heads=active_random_gamma_dim)
 
         if args.start_steps > total_numsteps:
             action = env.action_space.sample()
@@ -191,8 +269,20 @@ for i_episode in itertools.count(1):
                 writer.add_scalar("loss/policy", p, updates)
                 updates += 1
 
+        if total_numsteps >= args.num_steps:
+            done = True
+            break
+
     rewards.append(episode_reward)
     infos_all.append(infos)
+    info_metrics = compute_info_metrics(infos)
+    episode_metrics.append({
+        "episode": i_episode,
+        "total_numsteps": total_numsteps,
+        "episode_steps": episode_steps,
+        "reward": float(episode_reward),
+        **info_metrics,
+    })
     writer.add_scalar("reward/train", float(episode_reward), i_episode)
     print(f"Episode: {i_episode}, total numsteps: {total_numsteps}, steps: {episode_steps}, reward: {round(episode_reward, 2)}")
 
@@ -201,6 +291,35 @@ for i_episode in itertools.count(1):
 
 env.close()
 writer.close()
+
+# 保存训练指标与摘要
+metrics_df = pd.DataFrame(episode_metrics)
+metrics_csv_path = os.path.join(save_dir, "episode_metrics.csv")
+metrics_df.to_csv(metrics_csv_path, index=False, encoding="utf-8-sig")
+
+all_infos = [info for infos in infos_all for info in infos]
+overall_info_metrics = compute_info_metrics(all_infos)
+summary = {
+    "run_name": run_name,
+    "save_dir": save_dir,
+    "seed": int(args.seed),
+    "gamma_mode": args.gamma_mode,
+    "random_gamma_dim": int(active_random_gamma_dim),
+    "num_steps": int(args.num_steps),
+    "episodes": int(len(rewards)),
+    "total_numsteps": int(total_numsteps),
+    "episode_reward_mean": float(np.mean(rewards)) if rewards else 0.0,
+    "episode_reward_std": float(np.std(rewards)) if rewards else 0.0,
+    "episode_reward_min": float(np.min(rewards)) if rewards else 0.0,
+    "episode_reward_max": float(np.max(rewards)) if rewards else 0.0,
+    "final_episode_reward": float(rewards[-1]) if rewards else 0.0,
+    **overall_info_metrics,
+}
+summary_path = os.path.abspath(args.report_json) if args.report_json else os.path.join(save_dir, "training_summary.json")
+with open(summary_path, "w", encoding="utf-8") as f:
+    json.dump(summary, f, ensure_ascii=False, indent=2)
+print(f"训练指标已保存: {metrics_csv_path}")
+print(f"训练摘要已保存: {summary_path}")
 
 # ==============================================================================
 # 绘图与可视化 (基于 main_origin.py 逻辑，已集成保存功能)
@@ -502,6 +621,12 @@ if len(infos_all) > 0:
     save_voltage_analysis_report(infos, env, save_dir)
 
     # 2. 调用主绘图函数 (它会负责所有绘图和数据保存)
-    plot_microgrid_power_from_info(infos, env, save_dir)
+    if args.disable_plots:
+        voltages = np.array([info.get("voltages", np.zeros(len(env.net.bus))) for info in infos])
+        hours = np.arange(len(infos))
+        save_voltage_data(voltages, hours, env, save_dir)
+        print("已按参数跳过绘图，仅保存数据报表。")
+    else:
+        plot_microgrid_power_from_info(infos, env, save_dir)
     
     print(f"\n所有结果已归档至: {save_dir}")

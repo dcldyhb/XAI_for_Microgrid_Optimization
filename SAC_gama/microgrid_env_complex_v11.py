@@ -238,9 +238,10 @@ class IEEE33Env(gym.Env):
 
     def reset(self):
         self.episode_counter += 1  # ✅ 每次reset时自增1
-        #self.episode_start_idx = int(self.np_random.choice(self.day_start_indices))
-        # 每集固定从 0 点开始（保证 0~23 小时完整覆盖）
-        self.episode_start_idx = (self.episode_counter % self.num_days) * 24
+        # 直接复用初始化阶段筛出的合法起点，避免跳过首日，也兼容少于 24 条的短数据集。
+        start_indices = self.day_start_indices if self.day_start_indices else [0]
+        start_pos = (self.episode_counter - 1) % len(start_indices)
+        self.episode_start_idx = int(start_indices[start_pos])
 
         self.current_step = self.episode_start_idx
         # 👇 验证当天光照数据（打印24小时序列）

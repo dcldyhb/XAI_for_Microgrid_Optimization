@@ -1,10 +1,8 @@
-# PySR Gamma 信号公式汇总
+# PySR 信号公式汇总
 
-## 特征索引映射表
+## 1. 输入特征映射
 
-公式中的 $x_i$ 符号与以下实际特征相对应：
-
-| 符号 ($x_i$) | 特征变量名 |
+| 符号 ($x_i$) | 物理含义 |
 | :--- | :--- |
 | $x_{0}$ | `temperature` |
 | $x_{1}$ | `wind_speed` |
@@ -32,263 +30,186 @@
 | $x_{23}$ | `hour_of_day` |
 | $x_{24}$ | `day_of_week` |
 
+## 2. 挖掘结果
 
----
-
-### Gamma 信号: `yhat_ess1_up`
-
-**最佳公式:**
-
-$$
-x_{19}
-$$
-
----
-
-### Gamma 信号: `yhat_ess1_down`
-
-**最佳公式:**
-
-$$
-x_{19} - \frac{x_{19} e^{\frac{0.8443}{x_{23} + \sin{\left(e^{x_{24}} \right)}}}}{x_{0} \left(x_{16} - \cos{\left(\frac{e^{x_{5}}}{x_{12}} \right)}\right) \left(x_{17} + x_{20} + x_{22} \cdot 1.426\right)}
-$$
-
----
-
-### Gamma 信号: `yhat_ess2_up`
-
-**最佳公式:**
-
-$$
-x_{20} + \frac{\sin{\left(0.3800 x_{9} + 0.7997 \right)} + \cos{\left(x_{15} \right)} + 0.2875}{x_{14} x_{5} e^{x_{20} + \sin{\left(x_{0} \right)} + \sin{\left(\sin{\left(x_{9} \right)} \right)}}}
-$$
-
----
-
-### Gamma 信号: `yhat_ess2_down`
-
-**最佳公式:**
-
-$$
-\sin{\left(x_{19} \left(1.954 + \frac{0.8289}{x_{23} - x_{6}}\right) \right)} 1.095
-$$
-
----
-
-### Gamma 信号: `yhat_ess3_up`
-
-**最佳公式:**
-
-$$
-x_{19} + e^{e^{\frac{\left(0.8462 - \left(x_{19} - 0.8331\right)\right) e^{x_{12}}}{x_{6}}} \sin{\left(\frac{x_{10}}{\left(-1.723\right) \left(-1\right) 1.288} \right)}} 0.0001679
-$$
-
----
-
-### Gamma 信号: `yhat_ess3_down`
-
-**最佳公式:**
-
-$$
-\sin{\left(\frac{\sin{\left(\sin{\left(x_{20} \left(-0.7548\right) \frac{1}{1.095 - \frac{x_{9}}{x_{14}}} \right)} \right)}}{0.4542} \right)}
-$$
-
----
-
-### Gamma 信号: `yhat_ess4_up`
-
-**最佳公式:**
-
-$$
-x_{20} + \frac{\cos{\left(-0.6806 \right)}}{- x_{9} \left(- x_{19} + \cos{\left(x_{10} \left(-0.1381\right) \right)} - 1.033\right) - 0.5728}
-$$
-
----
-
-### Gamma 信号: `yhat_ess4_down`
-
-**最佳公式:**
-
-$$
-\sin{\left(x_{19} \cdot 6.583 \frac{1}{e^{\sin{\left(\sin{\left(x_{4} \left(-0.2586\right) \frac{1}{e^{\sin{\left(\frac{1.884}{e^{\sin{\left(\frac{1.912}{\sin{\left(x_{13} \right)}} \right)}}} \right)} 0.4450}} \right)} \right)}}} \right)}
-$$
-
----
-
-### Gamma 信号: `yhat_ess5_up`
-
-**最佳公式:**
-
-$$
-x_{19} + 0.0003642 e^{- 1.785 e^{- x_{19}} \log{\left(x_{16} \right)} \sin{\left(\frac{0.6111}{\sin{\left(x_{13} + x_{17} \right)}} \right)}}
-$$
-
----
-
-### Gamma 信号: `yhat_ess5_down`
-
-**最佳公式:**
-
-$$
-\log{\left(e^{x_{19} \cos{\left(\frac{0.07597 \sin{\left(x_{0} \right)}}{\cos{\left(- x_{7} + x_{9} + 7.747 \right)}} \right)}} \right)}
-$$
-
----
-
-### Gamma 信号: `yhat_sop1_fwd`
-
-**最佳公式:**
-
-$$
-x_{13} + \sin{\left(\frac{x_{12} x_{14}}{1.553} \right)} 0.2495
-$$
-
----
-
-### Gamma 信号: `yhat_sop1_rev`
-
-**最佳公式:**
-
-$$
-\cos{\left(\frac{\cos{\left(2.162 \log{\left(x_{13} \right)} - \log{\left(x_{8} \right)} \right)}}{\sin{\left(x_{13} + 0.3524 \right)}} \right)}
-$$
-
----
-
-### Gamma 信号: `yhat_sop2_fwd`
-
-**最佳公式:**
-
-$$
-\sin{\left(x_{20} \left(x_{5} + \sin{\left(\frac{2.009}{x_{13}} \right)}\right) \right)}
-$$
-
----
-
-### Gamma 信号: `yhat_sop2_rev`
-
-**最佳公式:**
-
-$$
-\cos{\left(\cos{\left(\frac{x_{18}}{x_{6}} \right)} \right)}
-$$
-
----
-
-### Gamma 信号: `yhat_pv1`
-
-**最佳公式:**
-
-$$
-x_{19} x_{19}
-$$
-
----
-
-### Gamma 信号: `yhat_pv2`
-
-**最佳公式:**
-
-$$
-x_{19} \cdot 1.000
-$$
-
----
-
-### Gamma 信号: `yhat_pv3`
-
-**最佳公式:**
-
-$$
-x_{19} x_{19}
-$$
-
----
-
-### Gamma 信号: `yhat_pv4`
-
-**最佳公式:**
-
+### 目标: `yhat_ess1_up`
+- **R2 Score**: 1.0000
 $$
 x_{20}
 $$
-
 ---
 
-### Gamma 信号: `yhat_pv5`
-
-**最佳公式:**
-
+### 目标: `yhat_ess1_down`
+- **R2 Score**: 1.0000
 $$
-x_{20} x_{20}
+x_{20} + x_{24} \frac{2101.}{\left(468.2 - x_{22} x_{23}\right)^{2}} \left(x_{19} - \frac{0.1906 x_{20}}{x_{13}}\right)
 $$
-
 ---
 
-### Gamma 信号: `yhat_pv6`
-
-**最佳公式:**
-
+### 目标: `yhat_ess2_up`
+- **R2 Score**: 0.9914
 $$
-x_{19} \sin{\left(\cos{\left(x_{16} \left(x_{5} - -0.1516\right) \right)} - -0.9469 \right)}
+x_{20} + \frac{0.06246}{x_{10}^{2} \left(\frac{x_{13}}{0.07771} + x_{20} - 2.454\right)^{2} \left(\frac{x_{13}}{0.07771} + x_{20} - 2.454\right)^{2}}
 $$
-
 ---
 
-### Gamma 信号: `yhat_wt1`
+### 目标: `yhat_ess2_down`
+- **R2 Score**: 0.9750
+$$
+0.09604 x_{20} \sqrt{x_{23} + x_{7}}
+$$
+---
 
-**最佳公式:**
+### 目标: `yhat_ess3_up`
+- **R2 Score**: 0.9495
+$$
+\frac{\left(7.266 - \frac{x_{12}}{x_{20} + \frac{x_{6}}{x_{17}}}\right)^{2}}{x_{15}}
+$$
+---
 
+### 目标: `yhat_ess3_down`
+- **R2 Score**: 0.9542
+$$
+\frac{x_{19} \left(x_{23} - -30.64\right)}{x_{17}}
+$$
+---
+
+### 目标: `yhat_ess4_up`
+- **R2 Score**: 0.8962
+$$
+\sqrt{x_{20} + 0.005547}
+$$
+---
+
+### 目标: `yhat_ess4_down`
+- **R2 Score**: 0.9571
+$$
+x_{12} \sqrt{x_{19} \left(x_{23} + 3.135\right)}
+$$
+---
+
+### 目标: `yhat_ess5_up`
+- **R2 Score**: 0.9865
+$$
+\left|{x_{20}}\right|
+$$
+---
+
+### 目标: `yhat_ess5_down`
+- **R2 Score**: 0.9728
+$$
+x_{19}^{2}
+$$
+---
+
+### 目标: `yhat_sop1_fwd`
+- **R2 Score**: 0.8863
+$$
+\left|{- x_{13} + x_{19} \left(2.163 - 0.5120 \frac{0.7590}{x_{13}}\right) + 0.1568}\right|
+$$
+---
+
+### 目标: `yhat_sop1_rev`
+- **R2 Score**: 0.7285
+$$
+\left(-1\right) 7.577 - \frac{120.3}{x_{7}} - - \frac{9.743}{x_{6}}
+$$
+---
+
+### 目标: `yhat_sop2_fwd`
+- **R2 Score**: 0.9116
+$$
+0.3378 x_{19} \sqrt{\left|{x_{23}^{2} \left(x_{12} - 0.1886\right)}\right|}
+$$
+---
+
+### 目标: `yhat_sop2_rev`
+- **R2 Score**: 0.5017
+$$
+x_{12} \frac{1}{x_{6} - 0.8203} \cdot 0.7200
+$$
+---
+
+### 目标: `yhat_pv1`
+- **R2 Score**: 1.0000
+$$
+x_{20}
+$$
+---
+
+### 目标: `yhat_pv2`
+- **R2 Score**: 1.0000
 $$
 x_{19}
 $$
-
 ---
 
-### Gamma 信号: `yhat_wt2`
-
-**最佳公式:**
-
-$$
-x_{19} x_{20}
-$$
-
----
-
-### Gamma 信号: `yhat_wt3`
-
-**最佳公式:**
-
+### 目标: `yhat_pv3`
+- **R2 Score**: 1.0000
 $$
 x_{19}
 $$
-
 ---
 
-### Gamma 信号: `yhat_wt4`
-
-**最佳公式:**
-
-$$
-x_{19} \cdot 1.000
-$$
-
----
-
-### Gamma 信号: `yhat_wt5`
-
-**最佳公式:**
-
-$$
-x_{20} \cdot 1.000
-$$
-
----
-
-### Gamma 信号: `yhat_wt6`
-
-**最佳公式:**
-
+### 目标: `yhat_pv4`
+- **R2 Score**: 1.0000
 $$
 x_{19}
 $$
+---
+
+### 目标: `yhat_pv5`
+- **R2 Score**: 1.0000
+$$
+x_{19}
+$$
+---
+
+### 目标: `yhat_pv6`
+- **R2 Score**: 0.9603
+$$
+\left|{x_{19} - \left(x_{13} - x_{21}\right)^{2}}\right|
+$$
+---
+
+### 目标: `yhat_wt1`
+- **R2 Score**: 1.0000
+$$
+x_{19}^{2}
+$$
+---
+
+### 目标: `yhat_wt2`
+- **R2 Score**: 1.0000
+$$
+x_{19}
+$$
+---
+
+### 目标: `yhat_wt3`
+- **R2 Score**: 1.0000
+$$
+x_{20}
+$$
+---
+
+### 目标: `yhat_wt4`
+- **R2 Score**: 1.0000
+$$
+x_{19}
+$$
+---
+
+### 目标: `yhat_wt5`
+- **R2 Score**: 1.0000
+$$
+x_{20}
+$$
+---
+
+### 目标: `yhat_wt6`
+- **R2 Score**: 1.0000
+$$
+x_{19}
+$$
+---
