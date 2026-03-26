@@ -51,31 +51,31 @@ class GeneratedGammaCalculator:
         x24 = state[24] # day_of_week
 
         # Formulas
-        gamma_0 = x19
-        gamma_1 = safe_sqrt(x20)
-        gamma_2 = np.square(x20)
-        gamma_3 = x19 + ((x19 / (x14 - np.square((x8 + 0.4807294) - (x14 * 1.3929163)))) / 0.9259921)
-        gamma_4 = x20 + np.abs(np.square((x19 * 0.3418984) + ((((1.0582619 / x6) - 1.2214626) + x12) * -4.724853)) / np.abs(safe_sqrt(x12)))
-        gamma_5 = np.abs(((0.46377304 / ((0.46377304 * x10) - (x20 / (x12 / 3.7431345)))) - 1.0598879) * x19)
-        gamma_6 = x20 + (x8 / np.square(((x6 * (x17 / 0.21958663)) - (x8 + ((x17 - (x20 / np.abs(-0.047591332 / x16))) + x7))) - 1.2018304))
-        gamma_7 = (x12 * x20) * safe_sqrt(x23 + 3.1349056)
-        gamma_8 = x19 + np.abs(safe_sqrt(x10) / (((x19 + 0.22754987) * x22) + (((2.6383564 - (x10 - x15)) * x15) * -0.5227047)))
-        gamma_9 = x20 - (0.40040523 * np.square(x20 * (0.40040523 / ((x7 * 0.6583265) - x17))))
-        gamma_10 = np.abs(safe_sqrt(np.abs(0.18837182 - x13)) * (x13 - (x20 * 2.114027)))
-        gamma_11 = (3.1770074 - (163.06245 / x7)) - x13
-        gamma_12 = (x19 * x23) / np.abs(x13 / ((-1.2840545 / x6) + 1.3180605))
-        gamma_13 = x8 * 0.010850728
-        gamma_14 = x19
+        gamma_0 = x20
+        gamma_1 = ((x19 + ((-0.19064498 / x13) * x20)) * (np.square(-45.839695 / (468.23236 - (x22 * x23))) * x24)) + x20
+        gamma_2 = x20 + np.square((0.24991035 / ((x13 / 0.07770698) + (x20 - 2.453835))) / (x10 * ((x20 - 2.453835) + (x13 / 0.07770698))))
+        gamma_3 = x20 * (safe_sqrt(x23 + x7) * 0.09603781)
+        gamma_4 = np.square(7.2661414 - (x12 / ((x6 / x17) + x20))) / x15
+        gamma_5 = x19 * ((x23 - -30.635393) / x17)
+        gamma_6 = safe_sqrt(x20 + 0.0055471025)
+        gamma_7 = x12 * safe_sqrt(x19 * (x23 + 3.1349053))
+        gamma_8 = np.abs(x20)
+        gamma_9 = np.square(x19)
+        gamma_10 = np.abs(((x19 * ((0.5119728 / (x13 / 0.7589886)) + -2.1628036)) + x13) - 0.15676016)
+        gamma_11 = ((-120.29004 / x7) - (-9.742846 / x6)) - 7.57672
+        gamma_12 = x19 * safe_sqrt(np.abs(x23 * (((x12 + -0.18864827) * x23) * 0.114101425)))
+        gamma_13 = (x12 / (x6 - 0.8202562)) * 0.71995753
+        gamma_14 = x20
         gamma_15 = x19
         gamma_16 = x19
         gamma_17 = x19
-        gamma_18 = x20
-        gamma_19 = safe_sqrt(x20 * np.abs((21.028105 / x11) + -20.065475))
-        gamma_20 = x19
+        gamma_18 = x19
+        gamma_19 = np.abs(x19 - np.square(x13 - x21))
+        gamma_20 = np.square(x19)
         gamma_21 = x19
         gamma_22 = x20
-        gamma_23 = x20
-        gamma_24 = safe_sqrt(x20)
+        gamma_23 = x19
+        gamma_24 = x20
         gamma_25 = x19
 
         # Output Assembly

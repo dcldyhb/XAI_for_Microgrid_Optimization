@@ -19,7 +19,9 @@ PYSR_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "PySR_gamma", "output_vector")
 OUTPUTS_ROOT = os.path.join(PROJECT_ROOT, "outputs")
 
 # 调整后数据集路径
-AUGMENTED_DATASET_DIR = os.path.join("PROJECTROOT", "dataset", "dataset_ieee33_augmented_phys.csv")
+# 兼容历史变量名：AUGMENTED_DATASET_DIR（错误命名）与 AUGMENTED_DATASET_PATH（推荐）
+AUGMENTED_DATASET_PATH = os.path.join(PROJECT_ROOT, "dataset", "dataset_ieee33_extreme_full_augmented_phys.csv")
+AUGMENTED_DATASET_DIR = AUGMENTED_DATASET_PATH
 
 # 划分后的数据集路径
 TRAIN_PATH = os.path.join(PROJECT_ROOT, "dataset", "dataset_ieee33_extreme_train.csv")
