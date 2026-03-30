@@ -44,7 +44,7 @@ parser.add_argument("--alpha", type=float, default=0.2)
 parser.add_argument("--automatic_entropy_tuning", type=bool, default=True)
 parser.add_argument("--seed", type=int, default=123456)
 parser.add_argument("--batch_size", type=int, default=256)
-parser.add_argument("--num_steps", type=int, default=5000)
+parser.add_argument("--num_steps", type=int, default=5016)
 parser.add_argument("--hidden_size", type=int, default=256)
 parser.add_argument("--updates_per_step", type=int, default=3)
 parser.add_argument("--start_steps", type=int, default=200)
@@ -80,6 +80,7 @@ env = IEEE33Env(data)
 env.seed(None)
 env.G_scale = 1.0 / 1000.0
 
+args.gamma_input_dim = args.random_gamma_dim if args.gamma_mode != "none" else 0
 agent = SAC(env.observation_space.shape[0], env.action_space, args)
 try:
     if hasattr(agent, "automatic_entropy_tuning"):
@@ -107,6 +108,14 @@ episode_metrics = []
 # [MODIFIED] 只保留随机 gamma 生成函数
 def generate_random_gamma(batch_size, n_heads):
     return torch.rand(batch_size, max(1, int(n_heads))).to(DEVICE)
+
+if args.gamma_mode != "none":
+    agent.initialize_gamma_module(args.random_gamma_dim)
+
+def compute_gamma_tensor():
+    if args.gamma_mode == "random":
+        return generate_random_gamma(1, args.random_gamma_dim)
+    return None
 
 def compute_info_metrics(infos):
     if len(infos) == 0:
@@ -151,9 +160,7 @@ for i_episode in itertools.count(1):
     infos = []
 
     while not done:
-        gamma = None
-        if args.gamma_mode == "random":
-            gamma = generate_random_gamma(1, args.random_gamma_dim)
+        gamma = compute_gamma_tensor()
 
         if args.start_steps > total_numsteps:
             action = env.action_space.sample()
@@ -171,9 +178,10 @@ for i_episode in itertools.count(1):
         next_state = np.asarray(next_state, dtype=np.float32).flatten()
         action = np.asarray(action, dtype=np.float32).flatten()
         reward = float(reward)
+        next_gamma = compute_gamma_tensor()
 
         mask = 1 if episode_steps == env._max_episode_steps else float(not done)
-        memory.push(state, action, reward / 100.0, next_state, mask)
+        memory.push(state, action, reward / 100.0, next_state, mask, gamma=gamma, next_gamma=next_gamma)
         state = next_state
 
         if len(memory) > args.batch_size:

@@ -107,31 +107,6 @@ env = IEEE33Env(data)
 env.seed(None)
 env.G_scale = 1.0 / 1000.0
 
-# ========== 初始化 agent ==========
-agent = SAC(env.observation_space.shape[0], env.action_space, args)
-try:
-    if hasattr(agent, "automatic_entropy_tuning"):
-        agent.automatic_entropy_tuning = False
-    if hasattr(agent, "alpha"):
-        agent.alpha = torch.tensor(0.2, dtype=torch.float32).to(DEVICE)
-except Exception as _e:
-    print(f"警告: alpha 参数微调跳过: {_e}")
-
-# ========== 输出目录配置 ==========
-timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-run_name = f"{timestamp}_{args.env_name}_{args.policy}_{args.gamma_mode.upper()}"
-
-save_dir = os.path.abspath(args.output_dir) if args.output_dir else os.path.join(OUTPUTS_ROOT, run_name)
-os.makedirs(save_dir, exist_ok=True)
-print(f"本次运行的所有结果将保存至: {save_dir}")
-
-log_dir = os.path.join(save_dir, "logs")
-os.makedirs(log_dir, exist_ok=True)
-writer = SummaryWriter(log_dir)
-
-memory = ReplayMemory(args.replay_size, args.seed)
-episode_metrics = []
-
 # [ADDED] 创建 PySR Gamma 计算器实例
 gamma_calculator = None
 if pysr_calculator_available and GeneratedGammaCalculator is not None:
@@ -149,31 +124,17 @@ def build_gamma_input(env_obj, feature_names):
     if not feature_names:
         return np.asarray(env_obj._get_state(env_obj.current_step), dtype=np.float32).flatten()
 
+    if not getattr(env_obj, "latest_feature_map", None):
+        env_obj._get_state(env_obj.current_step)
+
     idx = int(env_obj.current_step % len(env_obj.data))
     row = env_obj.data.iloc[idx]
+    feature_map = dict(getattr(env_obj, "latest_feature_map", {}) or {})
     values = []
 
     for feature_name in feature_names:
-        if feature_name.startswith("elec_soc_"):
-            try:
-                soc_idx = int(feature_name.split("_")[-1]) - 1
-                value = float(env_obj.current_soc[soc_idx])
-            except Exception:
-                value = float(row.get(feature_name, 0.0))
-        elif feature_name == "elec_any_violate":
-            vmin = float(row.get("elec_vmin", np.nan))
-            vmax = float(row.get("elec_vmax", np.nan))
-            if np.isfinite(vmin) and np.isfinite(vmax):
-                value = 1.0 if (vmin < env_obj.vmin or vmax > env_obj.vmax) else 0.0
-            else:
-                value = float(row.get(feature_name, 0.0))
-        elif feature_name == "elec_violate_v":
-            vmin = float(row.get("elec_vmin", np.nan))
-            vmax = float(row.get("elec_vmax", np.nan))
-            if np.isfinite(vmin) and np.isfinite(vmax):
-                value = float(max(0.0, env_obj.vmin - vmin) + max(0.0, vmax - env_obj.vmax))
-            else:
-                value = float(row.get(feature_name, 0.0))
+        if feature_name in feature_map:
+            value = float(feature_map.get(feature_name, 0.0))
         else:
             value = float(row.get(feature_name, 0.0))
 
@@ -214,6 +175,42 @@ active_random_gamma_dim = gamma_signal_count if gamma_signal_count > 0 else args
 if args.gamma_mode == "pysr" and gamma_calculator is None:
     print("警告: gamma_mode=pysr 但未加载到公式，自动回退为 random。")
     args.gamma_mode = "random"
+args.gamma_input_dim = active_random_gamma_dim if args.gamma_mode != "none" else 0
+
+# ========== 初始化 agent ==========
+agent = SAC(env.observation_space.shape[0], env.action_space, args)
+try:
+    if hasattr(agent, "automatic_entropy_tuning"):
+        agent.automatic_entropy_tuning = False
+    if hasattr(agent, "alpha"):
+        agent.alpha = torch.tensor(0.2, dtype=torch.float32).to(DEVICE)
+except Exception as _e:
+    print(f"警告: alpha 参数微调跳过: {_e}")
+if args.gamma_mode != "none":
+    agent.initialize_gamma_module(active_random_gamma_dim)
+
+def compute_gamma_tensor(env_obj):
+    if args.gamma_mode == "pysr":
+        gamma_input = build_gamma_input(env_obj, gamma_feature_names)
+        return gamma_calculator.compute(gamma_input)
+    if args.gamma_mode == "random":
+        return generate_random_gamma(1, n_heads=active_random_gamma_dim)
+    return None
+
+# ========== 输出目录配置 ==========
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+run_name = f"{timestamp}_{args.env_name}_{args.policy}_{args.gamma_mode.upper()}"
+
+save_dir = os.path.abspath(args.output_dir) if args.output_dir else os.path.join(OUTPUTS_ROOT, run_name)
+os.makedirs(save_dir, exist_ok=True)
+print(f"本次运行的所有结果将保存至: {save_dir}")
+
+log_dir = os.path.join(save_dir, "logs")
+os.makedirs(log_dir, exist_ok=True)
+writer = SummaryWriter(log_dir)
+
+memory = ReplayMemory(args.replay_size, args.seed)
+episode_metrics = []
 
 # ========== 训练与收集 info ==========
 rewards = []
@@ -233,12 +230,7 @@ for i_episode in itertools.count(1):
     infos = []
 
     while not done:
-        gamma = None
-        if args.gamma_mode == "pysr":
-            gamma_input = build_gamma_input(env, gamma_feature_names)
-            gamma = gamma_calculator.compute(gamma_input)
-        elif args.gamma_mode == "random":
-            gamma = generate_random_gamma(1, n_heads=active_random_gamma_dim)
+        gamma = compute_gamma_tensor(env)
 
         if args.start_steps > total_numsteps:
             action = env.action_space.sample()
@@ -256,9 +248,10 @@ for i_episode in itertools.count(1):
         next_state = np.asarray(next_state, dtype=np.float32).flatten()
         action = np.asarray(action, dtype=np.float32).flatten()
         reward = float(reward)
+        next_gamma = compute_gamma_tensor(env)
 
         mask = 1 if episode_steps == env._max_episode_steps else float(not done)
-        memory.push(state, action, reward / 100.0, next_state, mask)
+        memory.push(state, action, reward / 100.0, next_state, mask, gamma=gamma, next_gamma=next_gamma)
         state = next_state
 
         if len(memory) > args.batch_size:

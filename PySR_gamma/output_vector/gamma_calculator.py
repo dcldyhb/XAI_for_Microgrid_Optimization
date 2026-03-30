@@ -8,6 +8,7 @@ import os
 def safe_sqrt(x): return np.sqrt(np.abs(x))
 def safe_div(a, b): return np.divide(a, b + 1e-9)
 def safe_log(x): return np.log(np.abs(x) + 1e-9)
+def cube(x): return np.power(x, 3)
 
 # --- Path Configuration ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -19,8 +20,8 @@ except ImportError: DEVICE = torch.device('cpu')
 class GeneratedGammaCalculator:
     def __init__(self):
         np.seterr(all='ignore')
-        self.feature_names = ['temperature', 'wind_speed', 'solar_irradiance', 'precipitation_mm', 'elec_vmin', 'elec_vmax', 'elec_vavg', 'elec_line_loading_max', 'elec_line_loading_top1', 'elec_line_loading_top2', 'elec_line_loading_top3', 'elec_vmax_nonslack', 'elec_line_i_ka_max', 'elec_p_loss_mw', 'elec_soc_1', 'elec_soc_2', 'elec_soc_3', 'elec_soc_4', 'elec_soc_5', 'elec_any_violate', 'elec_violate_v', 'elec_violate_line', 'grid_load_demand', 'hour_of_day', 'day_of_week']
-        self.gamma_signals = ['yhat_ess1_up', 'yhat_ess1_down', 'yhat_ess2_up', 'yhat_ess2_down', 'yhat_ess3_up', 'yhat_ess3_down', 'yhat_ess4_up', 'yhat_ess4_down', 'yhat_ess5_up', 'yhat_ess5_down', 'yhat_sop1_fwd', 'yhat_sop1_rev', 'yhat_sop2_fwd', 'yhat_sop2_rev', 'yhat_pv1', 'yhat_pv2', 'yhat_pv3', 'yhat_pv4', 'yhat_pv5', 'yhat_pv6', 'yhat_wt1', 'yhat_wt2', 'yhat_wt3', 'yhat_wt4', 'yhat_wt5', 'yhat_wt6']
+        self.feature_names = ['temperature', 'wind_speed', 'solar_irradiance', 'precipitation_mm', 'elec_vmin', 'elec_vmax', 'elec_vavg', 'elec_line_loading_max', 'elec_line_loading_top1', 'elec_line_loading_top2', 'elec_line_loading_top3', 'elec_vmax_nonslack', 'elec_line_i_ka_max', 'elec_p_loss_mw', 'elec_soc_1', 'elec_soc_2', 'elec_soc_3', 'elec_soc_4', 'elec_soc_5', 'grid_load_demand', 'hour_of_day', 'day_of_week']
+        self.gamma_signals = ['sens_action_batt_0', 'sens_action_batt_1', 'sens_action_batt_2', 'sens_action_batt_3', 'sens_action_batt_4']
 
     def compute(self, state):
         # Unpack features based on training configuration
@@ -43,43 +44,19 @@ class GeneratedGammaCalculator:
         x16 = state[16] # elec_soc_3
         x17 = state[17] # elec_soc_4
         x18 = state[18] # elec_soc_5
-        x19 = state[19] # elec_any_violate
-        x20 = state[20] # elec_violate_v
-        x21 = state[21] # elec_violate_line
-        x22 = state[22] # grid_load_demand
-        x23 = state[23] # hour_of_day
-        x24 = state[24] # day_of_week
+        x19 = state[19] # grid_load_demand
+        x20 = state[20] # hour_of_day
+        x21 = state[21] # day_of_week
 
         # Formulas
-        gamma_0 = x20
-        gamma_1 = ((x19 + ((-0.19064498 / x13) * x20)) * (np.square(-45.839695 / (468.23236 - (x22 * x23))) * x24)) + x20
-        gamma_2 = x20 + np.square((0.24991035 / ((x13 / 0.07770698) + (x20 - 2.453835))) / (x10 * ((x20 - 2.453835) + (x13 / 0.07770698))))
-        gamma_3 = x20 * (safe_sqrt(x23 + x7) * 0.09603781)
-        gamma_4 = np.square(7.2661414 - (x12 / ((x6 / x17) + x20))) / x15
-        gamma_5 = x19 * ((x23 - -30.635393) / x17)
-        gamma_6 = safe_sqrt(x20 + 0.0055471025)
-        gamma_7 = x12 * safe_sqrt(x19 * (x23 + 3.1349053))
-        gamma_8 = np.abs(x20)
-        gamma_9 = np.square(x19)
-        gamma_10 = np.abs(((x19 * ((0.5119728 / (x13 / 0.7589886)) + -2.1628036)) + x13) - 0.15676016)
-        gamma_11 = ((-120.29004 / x7) - (-9.742846 / x6)) - 7.57672
-        gamma_12 = x19 * safe_sqrt(np.abs(x23 * (((x12 + -0.18864827) * x23) * 0.114101425)))
-        gamma_13 = (x12 / (x6 - 0.8202562)) * 0.71995753
-        gamma_14 = x20
-        gamma_15 = x19
-        gamma_16 = x19
-        gamma_17 = x19
-        gamma_18 = x19
-        gamma_19 = np.abs(x19 - np.square(x13 - x21))
-        gamma_20 = np.square(x19)
-        gamma_21 = x19
-        gamma_22 = x20
-        gamma_23 = x19
-        gamma_24 = x20
-        gamma_25 = x19
+        gamma_0 = np.square(-0.00023640059 / ((((x20 + x3) - 0.4161585) + -0.39995426) + (x3 - x13)))
+        gamma_1 = cube(x0 / x19) * 83.01992
+        gamma_2 = x20 / (x13 + (np.square(x20) + cube(x1 * (x3 + x13))))
+        gamma_3 = 1.7857401 / (x1 + (x20 - -1.9209685))
+        gamma_4 = (2.2903242 / np.square(x13 * ((x7 / 1.5671674) - x15))) / cube(x7)
 
         # Output Assembly
-        gamma_values = [gamma_0, gamma_1, gamma_2, gamma_3, gamma_4, gamma_5, gamma_6, gamma_7, gamma_8, gamma_9, gamma_10, gamma_11, gamma_12, gamma_13, gamma_14, gamma_15, gamma_16, gamma_17, gamma_18, gamma_19, gamma_20, gamma_21, gamma_22, gamma_23, gamma_24, gamma_25]
+        gamma_values = [gamma_0, gamma_1, gamma_2, gamma_3, gamma_4]
         # 数值清洗: 替换 NaN/Inf 为 0
         gamma_array = np.nan_to_num(np.array(gamma_values, dtype=np.float32), nan=0.0, posinf=0.0, neginf=0.0)
         return torch.from_numpy(gamma_array).to(DEVICE).unsqueeze(0)

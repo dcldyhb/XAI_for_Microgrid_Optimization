@@ -10,25 +10,34 @@ class ReplayMemory:
         self.buffer = []
         self.position = 0
 
-    def push(self, state, action, reward, next_state, done):
+    def _format_gamma(self, gamma):
+        if gamma is None:
+            return np.zeros((0,), dtype=np.float32)
+        if hasattr(gamma, "detach"):
+            gamma = gamma.detach().cpu().numpy()
+        return np.array(gamma, dtype=np.float32).flatten()
+
+    def push(self, state, action, reward, next_state, done, gamma=None, next_gamma=None):
         # 保证所有变量为 float32 的 numpy 数组
         state = np.array(state, dtype=np.float32).flatten()
         next_state = np.array(next_state, dtype=np.float32).flatten()
         action = np.array(action, dtype=np.float32).flatten()
         reward = np.float32(reward)
         done = np.float32(done)
+        gamma = self._format_gamma(gamma)
+        next_gamma = self._format_gamma(next_gamma)
 
         if len(self.buffer) < self.capacity:
             self.buffer.append(None)
-        self.buffer[self.position] = (state, action, reward, next_state, done)
+        self.buffer[self.position] = (state, action, reward, next_state, done, gamma, next_gamma)
         self.position = (self.position + 1) % self.capacity
         
 
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
-        state, action, reward, next_state, done = map(np.stack, zip(*batch))  # 会抛错如果 shape 不一致
-        return state, action, reward, next_state, done
+        state, action, reward, next_state, done, gamma, next_gamma = map(np.stack, zip(*batch))
+        return state, action, reward, next_state, done, gamma, next_gamma
 
     def __len__(self):
         return len(self.buffer)

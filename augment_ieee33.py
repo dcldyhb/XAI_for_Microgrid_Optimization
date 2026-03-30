@@ -38,6 +38,8 @@ NOISE_LEVEL = 0.05   # 环境参数扰动 5%
 # 电池动作采样范围 (-1.0 ~ 1.0)
 ACTION_LOW = -1.0
 ACTION_HIGH = 1.0
+TAIL_RATIO = 0.30
+SENSITIVITY_DELTA_ACTION = 0.05
 
 # ==========================================
 # 3. IEEE 33 物理仿真器类
@@ -118,6 +120,55 @@ class IEEE33Simulator:
         except Exception as e:
             return False
 
+    def get_bus_voltages(self):
+        if len(self.net.res_bus) == 0:
+            return np.ones((len(self.bus_idx),), dtype=np.float32)
+        return self.net.res_bus.vm_pu.to_numpy(dtype=np.float32)
+
+
+def compute_tail_voltage(voltages, tail_ratio=TAIL_RATIO):
+    voltages = np.asarray(voltages, dtype=np.float32).flatten()
+    if voltages.size == 0:
+        return 1.0
+    tail_count = max(1, int(np.ceil(voltages.size * float(tail_ratio))))
+    return float(np.mean(np.sort(voltages)[:tail_count]))
+
+
+def compute_action_sensitivities(sim, load_kw, pv_p_kw, wind_p_kw):
+    """
+    在零电池动作的基准工作点附近，对每个电池动作做中心差分，
+    得到 tail-voltage 对归一化动作 a_i in [-1, 1] 的局部灵敏度。
+    """
+    sensitivities = []
+    for i in range(sim.n_batt):
+        delta_action = float(SENSITIVITY_DELTA_ACTION)
+        delta_kw = float(sim.batt_power_mw[i] * 1000.0 * delta_action)
+
+        batt_p_plus = np.zeros(sim.n_batt, dtype=np.float32)
+        batt_p_minus = np.zeros(sim.n_batt, dtype=np.float32)
+        batt_p_plus[i] = delta_kw
+        batt_p_minus[i] = -delta_kw
+
+        ok_plus = sim.run_power_flow(load_kw, pv_p_kw, wind_p_kw, batt_p_plus)
+        if ok_plus:
+            vtail_plus = compute_tail_voltage(sim.get_bus_voltages())
+        else:
+            vtail_plus = np.nan
+
+        ok_minus = sim.run_power_flow(load_kw, pv_p_kw, wind_p_kw, batt_p_minus)
+        if ok_minus:
+            vtail_minus = compute_tail_voltage(sim.get_bus_voltages())
+        else:
+            vtail_minus = np.nan
+
+        if np.isfinite(vtail_plus) and np.isfinite(vtail_minus):
+            sensitivity = (vtail_plus - vtail_minus) / (2.0 * delta_action)
+        else:
+            sensitivity = 0.0
+        sensitivities.append(float(sensitivity))
+
+    return np.asarray(sensitivities, dtype=np.float32)
+
 # ==========================================
 # 4. 主执行逻辑
 # ==========================================
@@ -170,37 +221,39 @@ def main():
             # --- 3. 物理计算 ---
             pv_p_kw = [sim.calc_pv(aug_irr, aug_temp, cap) for cap in sim.pv_rated_kw]
             wind_p_kw = [sim.calc_wind(aug_wind, cap) for cap in sim.wind_rated_kw]
-            
+
             # --- 4. 运行 Pandapower ---
             success = sim.run_power_flow(aug_load, pv_p_kw, wind_p_kw, batt_p_kw)
-            
+
             if success:
+                base_res_bus = sim.net.res_bus.copy()
+                v_min = float(base_res_bus.vm_pu.min())
+                v_max = float(base_res_bus.vm_pu.max())
+                action_sensitivities = compute_action_sensitivities(sim, aug_load, pv_p_kw, wind_p_kw)
+
                 # --- 5. 保存结果 ---
                 # 更新输入特征
                 aug_row["grid_load_demand"] = aug_load
                 aug_row["temperature"] = aug_temp
                 aug_row["wind_speed"] = aug_wind
-                if irr_col: aug_row[irr_col] = aug_irr
-                
+                if irr_col:
+                    aug_row[irr_col] = aug_irr
+
                 # 记录动作 (这是 PySR 的重要输入特征)
                 for i, act in enumerate(batt_actions):
                     aug_row[f"action_batt_{i}"] = act
-                
-                # 记录物理状态 (Target / Ground Truth)
-                res = sim.net.res_bus
-                v_min = res.vm_pu.min()
-                v_max = res.vm_pu.max()
-                
+                    aug_row[f"sens_action_batt_{i}"] = float(action_sensitivities[i])
+
                 # 显式计算 Gamma (电压安全裕度)
                 # 定义: 距离安全边界(0.95, 1.05)的最小距离
                 # 正值表示安全，负值表示越限
                 # 公式: min(V - 0.95, 1.05 - V)
                 gamma_val = min(v_min - 0.95, 1.05 - v_max)
-                
+
                 aug_row["elec_vmin"] = v_min
                 aug_row["elec_vmax"] = v_max
                 aug_row["gamma"] = gamma_val
-                
+
                 new_rows.append(aug_row)
 
     # 保存

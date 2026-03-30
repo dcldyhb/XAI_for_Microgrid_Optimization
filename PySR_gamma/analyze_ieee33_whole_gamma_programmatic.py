@@ -48,12 +48,35 @@ df_test.replace({False: 0, True: 1}, inplace=True)
 # ==========================================
 
 # --- A. 确定目标 (y) ---
-# [修改点] 仅选择 yhat_ 开头的列作为目标，明确不分析 gamma
-gamma_target_columns = [col for col in df_train.columns if col.startswith('yhat_')]
+# 优先使用和当前 5 维电池动作一一对应的 signed 动作灵敏度标签。
+preferred_sensitivity_targets = [f"sens_action_batt_{i}" for i in range(5)]
+legacy_ess_pairs = [(f"yhat_ess{i}_up", f"yhat_ess{i}_down") for i in range(1, 6)]
 
-if not gamma_target_columns:
-    print("[ERROR] 未找到 'yhat_' 开头的目标列。")
-    sys.exit(1)
+if all(col in df_train.columns for col in preferred_sensitivity_targets):
+    gamma_target_columns = preferred_sensitivity_targets
+    print("[INFO] 发现显式动作灵敏度标签，直接用于 PySR 拟合。")
+else:
+    missing_legacy = [
+        (up_col, down_col)
+        for up_col, down_col in legacy_ess_pairs
+        if up_col not in df_train.columns or down_col not in df_train.columns
+    ]
+    if missing_legacy:
+        print("[ERROR] 未找到动作灵敏度标签，也无法从 yhat_ess*_up/down 回退构造。")
+        sys.exit(1)
+
+    print("[INFO] 未找到显式动作灵敏度标签，使用 yhat_ess*_up - yhat_ess*_down 构造 5 维 signed 动作灵敏度。")
+    for idx, (up_col, down_col) in enumerate(legacy_ess_pairs):
+        target_col = preferred_sensitivity_targets[idx]
+        df_train[target_col] = (
+            pd.to_numeric(df_train[up_col], errors='coerce').fillna(0.0)
+            - pd.to_numeric(df_train[down_col], errors='coerce').fillna(0.0)
+        )
+        df_test[target_col] = (
+            pd.to_numeric(df_test[up_col], errors='coerce').fillna(0.0)
+            - pd.to_numeric(df_test[down_col], errors='coerce').fillna(0.0)
+        )
+    gamma_target_columns = preferred_sensitivity_targets
 
 print(f"[INFO] 分析目标 ({len(gamma_target_columns)} 个): {gamma_target_columns}")
 
@@ -70,8 +93,22 @@ user_excluded_features = [
     'regime'
 ]
 
+# 这些变量更像结果告警，会让符号回归退化成“违规检测器”，
+# 不利于学习“状态 -> 动作灵敏度”的映射。
+leakage_excluded_features = [
+    'elec_any_violate',
+    'elec_violate_v',
+    'elec_violate_line',
+]
+
 # 合并所有需要排除的列 (特征 = 所有列 - 排除列 - 目标列)
-cols_to_drop = list(set(user_excluded_features + gamma_target_columns))
+legacy_target_columns = [col for col in df_train.columns if col.startswith('yhat_')]
+cols_to_drop = list(set(
+    user_excluded_features
+    + leakage_excluded_features
+    + gamma_target_columns
+    + legacy_target_columns
+))
 
 # 构建特征矩阵 X
 X_train_df = df_train.drop(columns=cols_to_drop, errors='ignore').apply(pd.to_numeric, errors='coerce').fillna(0)
@@ -101,12 +138,12 @@ for target_col in gamma_target_columns:
     model = PySRRegressor(
         niterations=50,
         binary_operators=["+", "*", "/", "-"],
-        # 仅保留物理意义明确的算子
-        unary_operators=["square", "abs", "sqrt"], 
+        # 动作灵敏度需要保留正负方向，避免 abs/sqrt 过度抹掉符号信息
+        unary_operators=["square", "cube"],
         # 防止公式过度嵌套膨胀
         nested_constraints={
-            "square": {"square": 0, "sqrt": 0},
-            "sqrt": {"square": 0, "sqrt": 0},
+            "square": {"square": 0, "cube": 0},
+            "cube": {"square": 0, "cube": 0},
         },
         maxsize=25,       # 限制公式长度
         parsimony=0.001,  # 复杂度惩罚
@@ -156,6 +193,7 @@ python_code_lines = [
     "def safe_sqrt(x): return np.sqrt(np.abs(x))",
     "def safe_div(a, b): return np.divide(a, b + 1e-9)",
     "def safe_log(x): return np.log(np.abs(x) + 1e-9)",
+    "def cube(x): return np.power(x, 3)",
     "",
     "# --- Path Configuration ---",
     "current_dir = os.path.dirname(os.path.abspath(__file__))",

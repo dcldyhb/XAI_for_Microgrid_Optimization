@@ -175,6 +175,7 @@ class IEEE33Env(gym.Env):
         self.episode_step_count = 0
 
         self.np_random = np.random.RandomState()
+        self.latest_feature_map = {}
 
     # ===== Helper =====
     def _build_price_from_mode(self, mode, vol_factor=1.0):
@@ -370,7 +371,8 @@ class IEEE33Env(gym.Env):
         
         # 获取当前储能状态（假设无动作时的功率）
         batt_p_list = np.zeros(self.n_batt, dtype=np.float32)
-        voltages, _ = self._run_power_flow(pv_p, wind_p, batt_p_list, load_kW)
+        voltages, line_loading = self._run_power_flow(pv_p, wind_p, batt_p_list, load_kW)
+        self.latest_feature_map = self._build_live_feature_map(row, load_kW, pv_p, wind_p, voltages, line_loading)
         
         grid_kW_pf = load_kW - (np.sum(pv_p) + np.sum(wind_p))
         ctx = self._time_ctx(idx)
@@ -388,6 +390,69 @@ class IEEE33Env(gym.Env):
         day_ang = 2 * np.pi * dow / 7
         return np.array([np.sin(hour_ang), np.cos(hour_ang), float(self.price_per_hour[hour]),
                          np.sin(day_ang), np.cos(day_ang), 1.0 if dow >= 5 else 0.0, 0, 0, 0], dtype=np.float32)
+
+    def _topk_desc(self, values, k):
+        arr = np.asarray(values, dtype=np.float32).flatten()
+        if arr.size == 0:
+            return np.zeros((k,), dtype=np.float32)
+        sorted_vals = np.sort(arr)[::-1][:k]
+        if sorted_vals.size < k:
+            sorted_vals = np.pad(sorted_vals, (0, k - sorted_vals.size), mode="constant")
+        return sorted_vals.astype(np.float32)
+
+    def _build_live_feature_map(self, row, load_kW, pv_p, wind_p, voltages, line_loading):
+        voltages = np.asarray(voltages, dtype=np.float32).flatten()
+        line_loading = np.asarray(line_loading, dtype=np.float32).flatten()
+        line_top = self._topk_desc(line_loading, 3)
+
+        if len(getattr(self.net, "res_line", [])) > 0:
+            res_line = self.net.res_line
+            current_cols = [c for c in ("i_ka", "i_from_ka", "i_to_ka") if c in res_line.columns]
+            if current_cols:
+                current_stack = np.vstack([res_line[c].fillna(0.0).to_numpy(dtype=np.float32) for c in current_cols])
+                line_currents = np.max(current_stack, axis=0)
+            else:
+                line_currents = np.zeros((len(res_line),), dtype=np.float32)
+            p_loss_mw = float(res_line["pl_mw"].fillna(0.0).sum()) if "pl_mw" in res_line.columns else 0.0
+        else:
+            line_currents = np.zeros((0,), dtype=np.float32)
+            p_loss_mw = 0.0
+
+        vmin = float(np.min(voltages)) if voltages.size > 0 else 1.0
+        vmax = float(np.max(voltages)) if voltages.size > 0 else 1.0
+        violate_v = float(max(0.0, self.vmin - vmin) + max(0.0, vmax - self.vmax))
+        violate_line = 1.0 if np.any(line_loading > 100.0) else 0.0
+        any_violate = 1.0 if (violate_v > 0.0 or violate_line > 0.0) else 0.0
+        vmax_nonslack = float(np.max(voltages[1:])) if voltages.size > 1 else vmax
+        line_i_ka_max = float(np.max(line_currents)) if line_currents.size > 0 else 0.0
+
+        feature_map = {
+            "temperature": float(row.get("temperature", self.T_ref)),
+            "wind_speed": float(row.get("wind_speed", 5.0)),
+            "solar_irradiance": float(row.get(self._irr_col, 0.0)) if self._irr_col else 0.0,
+            "precipitation_mm": float(row.get("precipitation_mm", 0.0)),
+            "elec_vmin": vmin,
+            "elec_vmax": vmax,
+            "elec_vavg": float(np.mean(voltages)) if voltages.size > 0 else 1.0,
+            "elec_line_loading_max": float(np.max(line_loading)) if line_loading.size > 0 else 0.0,
+            "elec_line_loading_top1": float(line_top[0]),
+            "elec_line_loading_top2": float(line_top[1]),
+            "elec_line_loading_top3": float(line_top[2]),
+            "elec_vmax_nonslack": vmax_nonslack,
+            "elec_line_i_ka_max": line_i_ka_max,
+            "elec_p_loss_mw": p_loss_mw,
+            "elec_any_violate": any_violate,
+            "elec_violate_v": violate_v,
+            "elec_violate_line": violate_line,
+            "grid_load_demand": float(load_kW),
+            "hour_of_day": float(row.get("hour_of_day", self.current_step % 24)),
+            "day_of_week": float(row.get("day_of_week", 0.0)),
+        }
+
+        for idx, soc in enumerate(np.asarray(self.current_soc, dtype=np.float32), start=1):
+            feature_map[f"elec_soc_{idx}"] = float(soc)
+
+        return feature_map
 
     def _calc_wind(self, v, rated_kw):
         if v < self.v_ci: return 0.0

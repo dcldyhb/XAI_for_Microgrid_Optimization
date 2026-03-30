@@ -1,27 +1,42 @@
 import os
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from SAC_gama.utils import soft_update, hard_update
-from SAC_gama.model_gamma import GaussianPolicy, QNetwork, DeterministicPolicy
-import numpy as np
+
+from SAC_gama.model_gamma import DeterministicPolicy, GaussianPolicy, QNetwork
+from SAC_gama.utils import hard_update, soft_update
+
 
 class SAC(object):
     def __init__(self, num_inputs, action_space, args):
         self.gamma = args.gamma
         self.tau = args.tau
         self.alpha = args.alpha
+        self.policy_lr = args.lr
+        self.critic_lr = args.lr
 
         self.policy_type = args.policy
         self.target_update_interval = args.target_update_interval
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
+        self.device = getattr(args, "device", torch.device("cpu"))
 
-        self.device = getattr(args, 'device', torch.device("cpu")) # 确保 device 从 args 中获取
+        gamma_input_dim = int(max(0, getattr(args, "gamma_input_dim", 0) or 0))
 
-        self.critic = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
-        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
+        self.critic = QNetwork(
+            num_inputs,
+            action_space.shape[0],
+            args.hidden_size,
+            gamma_dim=gamma_input_dim,
+        ).to(self.device)
+        self.critic_optim = Adam(self.critic.parameters(), lr=self.critic_lr)
 
-        self.critic_target = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        self.critic_target = QNetwork(
+            num_inputs,
+            action_space.shape[0],
+            args.hidden_size,
+            gamma_dim=gamma_input_dim,
+        ).to(self.device)
         hard_update(self.critic_target, self.critic)
 
         if self.policy_type == "Gaussian":
@@ -30,43 +45,118 @@ class SAC(object):
                 self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
                 self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
 
-            self.policy = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
-            self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
-
+            self.policy = GaussianPolicy(
+                num_inputs,
+                action_space.shape[0],
+                args.hidden_size,
+                action_space,
+                gamma_dim=gamma_input_dim,
+            ).to(self.device)
+            self.policy_optim = Adam(self.policy.parameters(), lr=self.policy_lr)
         else:
-            self.alpha = 0
+            self.alpha = 0.0
             self.automatic_entropy_tuning = False
-            self.policy = DeterministicPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
-            self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+            self.policy = DeterministicPolicy(
+                num_inputs,
+                action_space.shape[0],
+                args.hidden_size,
+                action_space,
+            ).to(self.device)
+            self.policy_optim = Adam(self.policy.parameters(), lr=self.policy_lr)
+
+    def _refresh_policy_optimizer(self):
+        self.policy_optim = Adam(self.policy.parameters(), lr=self.policy_lr)
+
+    def _refresh_critic_optimizer(self):
+        self.critic_optim = Adam(self.critic.parameters(), lr=self.critic_lr)
+
+    def initialize_gamma_module(self, gamma_dim):
+        gamma_dim = int(max(0, gamma_dim or 0))
+        if gamma_dim <= 0:
+            return
+
+        critic_rebuilt = self.critic.ensure_gamma_proj(gamma_dim, device=self.device)
+        target_rebuilt = self.critic_target.ensure_gamma_proj(gamma_dim, device=self.device)
+        if critic_rebuilt or target_rebuilt:
+            hard_update(self.critic_target, self.critic)
+            self._refresh_critic_optimizer()
+
+        if self.policy_type == "Gaussian" and self.policy.ensure_gamma_proj(gamma_dim, device=self.device):
+            self._refresh_policy_optimizer()
+
+    def _prepare_gamma_batch(self, gamma_batch):
+        if gamma_batch is None:
+            return None
+
+        if isinstance(gamma_batch, torch.Tensor):
+            gamma_tensor = gamma_batch.detach().to(self.device, dtype=torch.float32)
+            if gamma_tensor.dim() == 1:
+                gamma_tensor = gamma_tensor.unsqueeze(0)
+        else:
+            gamma_array = np.asarray(gamma_batch, dtype=np.float32)
+            if gamma_array.ndim == 1:
+                gamma_array = np.expand_dims(gamma_array, axis=0)
+            gamma_tensor = torch.as_tensor(gamma_array, dtype=torch.float32, device=self.device)
+
+        if gamma_tensor.dim() != 2 or gamma_tensor.size(1) == 0:
+            return None
+
+        self.initialize_gamma_module(gamma_tensor.size(1))
+        return gamma_tensor
+
+    def _alpha_log_value(self):
+        if torch.is_tensor(self.alpha):
+            return self.alpha.detach().clone()
+        return torch.tensor(float(self.alpha), dtype=torch.float32, device=self.device)
 
     def select_action(self, state, gamma=None, evaluate=False):
-        # 转成 tensor
-        state = np.array(state, dtype=np.float32)
-        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)  # [1, num_inputs]
+        state = np.asarray(state, dtype=np.float32)
+        state = torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+        gamma = self._prepare_gamma_batch(gamma)
 
-        # 直接调用 policy.sample，并传入 gamma
         action, log_prob, mean = self.policy.sample(state, gamma=gamma)
-
-        # 返回 numpy 数组
-        return action.detach().cpu().numpy()[0], log_prob, mean
-
+        chosen_action = mean if evaluate else action
+        return chosen_action.detach().cpu().numpy()[0], log_prob, mean
 
     def update_parameters(self, memory, batch_size, updates):
-        state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
+        batch = memory.sample(batch_size=batch_size)
+        if len(batch) == 5:
+            state_batch, action_batch, reward_batch, next_state_batch, mask_batch = batch
+            gamma_batch = None
+            next_gamma_batch = None
+        else:
+            (
+                state_batch,
+                action_batch,
+                reward_batch,
+                next_state_batch,
+                mask_batch,
+                gamma_batch,
+                next_gamma_batch,
+            ) = batch
 
-        state_batch = torch.FloatTensor(state_batch).to(self.device)
-        next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
-        action_batch = torch.FloatTensor(action_batch).to(self.device)
-        reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
-        mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
+        state_batch = torch.as_tensor(state_batch, dtype=torch.float32, device=self.device)
+        next_state_batch = torch.as_tensor(next_state_batch, dtype=torch.float32, device=self.device)
+        action_batch = torch.as_tensor(action_batch, dtype=torch.float32, device=self.device)
+        reward_batch = torch.as_tensor(reward_batch, dtype=torch.float32, device=self.device).unsqueeze(1)
+        mask_batch = torch.as_tensor(mask_batch, dtype=torch.float32, device=self.device).unsqueeze(1)
+        gamma_batch = self._prepare_gamma_batch(gamma_batch)
+        next_gamma_batch = self._prepare_gamma_batch(next_gamma_batch)
 
         with torch.no_grad():
-            next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
-            qf1_next_target, qf2_next_target = self.critic_target(next_state_batch, next_state_action)
+            next_state_action, next_state_log_pi, _ = self.policy.sample(
+                next_state_batch,
+                gamma=next_gamma_batch,
+            )
+            qf1_next_target, qf2_next_target = self.critic_target(
+                next_state_batch,
+                next_state_action,
+                gamma=next_gamma_batch,
+            )
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
             next_q_value = reward_batch + mask_batch * self.gamma * min_qf_next_target
 
-        qf1, qf2 = self.critic(state_batch, action_batch)
+        qf1, qf2 = self.critic(state_batch, action_batch, gamma=gamma_batch)
         qf1_loss = F.mse_loss(qf1, next_q_value)
         qf2_loss = F.mse_loss(qf2, next_q_value)
 
@@ -74,10 +164,9 @@ class SAC(object):
         (qf1_loss + qf2_loss).backward()
         self.critic_optim.step()
 
-        pi, log_pi, _ = self.policy.sample(state_batch)
-        qf1_pi, qf2_pi = self.critic(state_batch, pi)
+        pi, log_pi, _ = self.policy.sample(state_batch, gamma=gamma_batch)
+        qf1_pi, qf2_pi = self.critic(state_batch, pi, gamma=gamma_batch)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
-
         policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean()
 
         self.policy_optim.zero_grad()
@@ -91,38 +180,59 @@ class SAC(object):
             self.alpha_optim.step()
 
             self.alpha = self.log_alpha.exp()
-            alpha_tlogs = self.alpha.clone()
+            alpha_tlogs = self.alpha.detach().clone()
         else:
-            alpha_loss = torch.tensor(0.).to(self.device)
-            alpha_tlogs = self.alpha.clone().detach() # 使用 clone().detach() 来避免警告，且更安全
+            alpha_loss = torch.tensor(0.0, device=self.device)
+            alpha_tlogs = self._alpha_log_value()
 
         if updates % self.target_update_interval == 0:
             soft_update(self.critic_target, self.critic, self.tau)
 
-        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), alpha_tlogs.item()
+        return (
+            qf1_loss.item(),
+            qf2_loss.item(),
+            policy_loss.item(),
+            alpha_loss.item(),
+            alpha_tlogs.item(),
+        )
 
     def save_checkpoint(self, env_name, suffix="", ckpt_path=None):
-        if not os.path.exists('checkpoints/'):
-            os.makedirs('checkpoints/')
+        if not os.path.exists("checkpoints/"):
+            os.makedirs("checkpoints/")
         if ckpt_path is None:
             ckpt_path = f"checkpoints/sac_checkpoint_{env_name}_{suffix}"
-        print(f'Saving models to {ckpt_path}')
-        torch.save({
-            'policy_state_dict': self.policy.state_dict(),
-            'critic_state_dict': self.critic.state_dict(),
-            'critic_target_state_dict': self.critic_target.state_dict(),
-            'critic_optimizer_state_dict': self.critic_optim.state_dict(),
-            'policy_optimizer_state_dict': self.policy_optim.state_dict(),
-        }, ckpt_path)
+        print(f"Saving models to {ckpt_path}")
+        torch.save(
+            {
+                "policy_state_dict": self.policy.state_dict(),
+                "critic_state_dict": self.critic.state_dict(),
+                "critic_target_state_dict": self.critic_target.state_dict(),
+                "critic_optimizer_state_dict": self.critic_optim.state_dict(),
+                "policy_optimizer_state_dict": self.policy_optim.state_dict(),
+            },
+            ckpt_path,
+        )
 
     def load_checkpoint(self, ckpt_path, evaluate=False):
-        print(f'Loading models from {ckpt_path}')
-        checkpoint = torch.load(ckpt_path)
-        self.policy.load_state_dict(checkpoint['policy_state_dict'])
-        self.critic.load_state_dict(checkpoint['critic_state_dict'])
-        self.critic_target.load_state_dict(checkpoint['critic_target_state_dict'])
-        self.critic_optim.load_state_dict(checkpoint['critic_optimizer_state_dict'])
-        self.policy_optim.load_state_dict(checkpoint['policy_optimizer_state_dict'])
+        print(f"Loading models from {ckpt_path}")
+        checkpoint = torch.load(ckpt_path, map_location=self.device)
+
+        gamma_dims = []
+        for state_dict, key in (
+            (checkpoint["policy_state_dict"], "gamma_proj.weight"),
+            (checkpoint["critic_state_dict"], "q1_gamma_proj.weight"),
+        ):
+            weight = state_dict.get(key)
+            if weight is not None:
+                gamma_dims.append(int(weight.shape[1]))
+        if gamma_dims:
+            self.initialize_gamma_module(max(gamma_dims))
+
+        self.policy.load_state_dict(checkpoint["policy_state_dict"])
+        self.critic.load_state_dict(checkpoint["critic_state_dict"])
+        self.critic_target.load_state_dict(checkpoint["critic_target_state_dict"])
+        self.critic_optim.load_state_dict(checkpoint["critic_optimizer_state_dict"])
+        self.policy_optim.load_state_dict(checkpoint["policy_optimizer_state_dict"])
 
         if evaluate:
             self.policy.eval()
