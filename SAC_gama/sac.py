@@ -21,11 +21,42 @@ class SAC(object):
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = getattr(args, "device", torch.device("cpu"))
 
+        self.action_dim = int(action_space.shape[0])
+        self.action_scale = torch.as_tensor(
+            (action_space.high - action_space.low) / 2.0,
+            dtype=torch.float32,
+            device=self.device,
+        )
+        self.action_bias = torch.as_tensor(
+            (action_space.high + action_space.low) / 2.0,
+            dtype=torch.float32,
+            device=self.device,
+        )
+
+        self.gamma_actor_init_strength = float(getattr(args, "gamma_actor_init_strength", 0.0))
+        self.gamma_actor_final_strength = float(getattr(args, "gamma_actor_final_strength", 0.25))
+        self.gamma_actor_warmup_updates = int(max(1, getattr(args, "gamma_actor_warmup_updates", 1)))
+
+        self.gamma_critic_init_strength = float(getattr(args, "gamma_critic_init_strength", 0.0))
+        self.gamma_critic_final_strength = float(getattr(args, "gamma_critic_final_strength", 0.15))
+        self.gamma_critic_delay_updates = int(max(0, getattr(args, "gamma_critic_delay_updates", 0)))
+        self.gamma_critic_warmup_updates = int(max(1, getattr(args, "gamma_critic_warmup_updates", 1)))
+
+        self.gamma_prior_weight_init = float(getattr(args, "gamma_prior_weight_init", 0.0))
+        self.gamma_prior_weight_final = float(getattr(args, "gamma_prior_weight_final", 0.0))
+        self.gamma_prior_decay_updates = int(max(1, getattr(args, "gamma_prior_decay_updates", 1)))
+        self.gamma_prior_action_scale = float(getattr(args, "gamma_prior_action_scale", 1.0))
+
+        self.last_policy_prior_loss = 0.0
+        self.last_policy_prior_confidence = 0.0
+        self.last_actor_gamma_strength = 0.0
+        self.last_critic_gamma_strength = 0.0
+
         gamma_input_dim = int(max(0, getattr(args, "gamma_input_dim", 0) or 0))
 
         self.critic = QNetwork(
             num_inputs,
-            action_space.shape[0],
+            self.action_dim,
             args.hidden_size,
             gamma_dim=gamma_input_dim,
         ).to(self.device)
@@ -33,7 +64,7 @@ class SAC(object):
 
         self.critic_target = QNetwork(
             num_inputs,
-            action_space.shape[0],
+            self.action_dim,
             args.hidden_size,
             gamma_dim=gamma_input_dim,
         ).to(self.device)
@@ -47,7 +78,7 @@ class SAC(object):
 
             self.policy = GaussianPolicy(
                 num_inputs,
-                action_space.shape[0],
+                self.action_dim,
                 args.hidden_size,
                 action_space,
                 gamma_dim=gamma_input_dim,
@@ -58,17 +89,64 @@ class SAC(object):
             self.automatic_entropy_tuning = False
             self.policy = DeterministicPolicy(
                 num_inputs,
-                action_space.shape[0],
+                self.action_dim,
                 args.hidden_size,
                 action_space,
             ).to(self.device)
             self.policy_optim = Adam(self.policy.parameters(), lr=self.policy_lr)
+
+        self._apply_gamma_schedule(0)
 
     def _refresh_policy_optimizer(self):
         self.policy_optim = Adam(self.policy.parameters(), lr=self.policy_lr)
 
     def _refresh_critic_optimizer(self):
         self.critic_optim = Adam(self.critic.parameters(), lr=self.critic_lr)
+
+    def _linear_schedule(self, step, start_step, duration, start_value, end_value):
+        if duration <= 0:
+            return float(end_value)
+        if step <= start_step:
+            return float(start_value)
+        if step >= start_step + duration:
+            return float(end_value)
+        ratio = float(step - start_step) / float(duration)
+        return float(start_value + ratio * (end_value - start_value))
+
+    def _apply_gamma_schedule(self, updates):
+        actor_strength = self._linear_schedule(
+            updates,
+            start_step=0,
+            duration=self.gamma_actor_warmup_updates,
+            start_value=self.gamma_actor_init_strength,
+            end_value=self.gamma_actor_final_strength,
+        )
+        critic_strength = self._linear_schedule(
+            updates,
+            start_step=self.gamma_critic_delay_updates,
+            duration=self.gamma_critic_warmup_updates,
+            start_value=self.gamma_critic_init_strength,
+            end_value=self.gamma_critic_final_strength,
+        )
+
+        self.last_actor_gamma_strength = actor_strength
+        self.last_critic_gamma_strength = critic_strength
+
+        if hasattr(self.policy, "set_gamma_strength"):
+            self.policy.set_gamma_strength(actor_strength)
+        if hasattr(self.critic, "set_gamma_strength"):
+            self.critic.set_gamma_strength(critic_strength)
+        if hasattr(self.critic_target, "set_gamma_strength"):
+            self.critic_target.set_gamma_strength(critic_strength)
+
+    def _policy_prior_weight(self, updates):
+        return self._linear_schedule(
+            updates,
+            start_step=0,
+            duration=self.gamma_prior_decay_updates,
+            start_value=self.gamma_prior_weight_init,
+            end_value=self.gamma_prior_weight_final,
+        )
 
     def initialize_gamma_module(self, gamma_dim):
         gamma_dim = int(max(0, gamma_dim or 0))
@@ -119,6 +197,8 @@ class SAC(object):
         return chosen_action.detach().cpu().numpy()[0], log_prob, mean
 
     def update_parameters(self, memory, batch_size, updates):
+        self._apply_gamma_schedule(updates)
+
         batch = memory.sample(batch_size=batch_size)
         if len(batch) == 5:
             state_batch, action_batch, reward_batch, next_state_batch, mask_batch = batch
@@ -143,6 +223,9 @@ class SAC(object):
         gamma_batch = self._prepare_gamma_batch(gamma_batch)
         next_gamma_batch = self._prepare_gamma_batch(next_gamma_batch)
 
+        critic_gamma_batch = gamma_batch if updates >= self.gamma_critic_delay_updates else None
+        critic_next_gamma_batch = next_gamma_batch if updates >= self.gamma_critic_delay_updates else None
+
         with torch.no_grad():
             next_state_action, next_state_log_pi, _ = self.policy.sample(
                 next_state_batch,
@@ -151,12 +234,12 @@ class SAC(object):
             qf1_next_target, qf2_next_target = self.critic_target(
                 next_state_batch,
                 next_state_action,
-                gamma=next_gamma_batch,
+                gamma=critic_next_gamma_batch,
             )
             min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
             next_q_value = reward_batch + mask_batch * self.gamma * min_qf_next_target
 
-        qf1, qf2 = self.critic(state_batch, action_batch, gamma=gamma_batch)
+        qf1, qf2 = self.critic(state_batch, action_batch, gamma=critic_gamma_batch)
         qf1_loss = F.mse_loss(qf1, next_q_value)
         qf2_loss = F.mse_loss(qf2, next_q_value)
 
@@ -164,10 +247,12 @@ class SAC(object):
         (qf1_loss + qf2_loss).backward()
         self.critic_optim.step()
 
-        pi, log_pi, _ = self.policy.sample(state_batch, gamma=gamma_batch)
-        qf1_pi, qf2_pi = self.critic(state_batch, pi, gamma=gamma_batch)
+        pi, log_pi, mean_pi = self.policy.sample(state_batch, gamma=gamma_batch)
+        qf1_pi, qf2_pi = self.critic(state_batch, pi, gamma=critic_gamma_batch)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
         policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean()
+        self.last_policy_prior_loss = 0.0
+        self.last_policy_prior_confidence = 0.0
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
@@ -233,6 +318,13 @@ class SAC(object):
         self.critic_target.load_state_dict(checkpoint["critic_target_state_dict"])
         self.critic_optim.load_state_dict(checkpoint["critic_optimizer_state_dict"])
         self.policy_optim.load_state_dict(checkpoint["policy_optimizer_state_dict"])
+        self._apply_gamma_schedule(
+            max(
+                self.gamma_actor_warmup_updates,
+                self.gamma_critic_delay_updates + self.gamma_critic_warmup_updates,
+                self.gamma_prior_decay_updates,
+            )
+        )
 
         if evaluate:
             self.policy.eval()

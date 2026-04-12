@@ -78,6 +78,9 @@ class QNetwork(nn.Module):
             self.q1_gamma_proj = build_gamma_proj(self.gamma_dim, self.hidden_dim)
             self.q2_gamma_proj = build_gamma_proj(self.gamma_dim, self.hidden_dim)
 
+    def set_gamma_strength(self, strength):
+        self.gamma_strength = float(max(0.0, strength))
+
     def ensure_gamma_proj(self, gamma_dim, device=None):
         gamma_dim = int(max(0, gamma_dim or 0))
         if gamma_dim <= 0:
@@ -158,6 +161,9 @@ class GaussianPolicy(nn.Module):
         else:
             self.action_scale = torch.FloatTensor((action_space.high - action_space.low) / 2.0)
             self.action_bias = torch.FloatTensor((action_space.high + action_space.low) / 2.0)
+
+    def set_gamma_strength(self, strength):
+        self.gamma_strength = float(max(0.0, strength))
 
     def ensure_gamma_proj(self, gamma_dim, device=None):
         gamma_dim = int(max(0, gamma_dim or 0))

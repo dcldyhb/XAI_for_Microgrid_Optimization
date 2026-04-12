@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from pysr import PySRRegressor
 import warnings
+from typing import Optional
 
 # ==========================================
 # 0. 路径与环境配置
@@ -121,6 +122,47 @@ feature_names = X_train_df.columns.to_list()
 print(f"[INFO] 使用特征 ({len(feature_names)} 个): {feature_names}")
 print(f"[INFO] 样本数量: {len(X_train)} (训练) / {len(X_test)} (测试)")
 
+
+def normalize_pareto_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    rename_map = {
+        "Complexity": "complexity",
+        "Loss": "loss",
+        "Equation": "equation",
+        "Score": "score",
+    }
+    df = df.rename(columns=rename_map).copy()
+
+    for col in ("complexity", "loss", "score"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    if "pick" in df.columns:
+        df["pick"] = df["pick"].astype(str).str.lower().isin(["1", "true", "t", "yes"])
+
+    sort_cols = [col for col in ("complexity", "loss") if col in df.columns]
+    if sort_cols:
+        df = df.sort_values(sort_cols).reset_index(drop=True)
+    return df
+
+
+def export_pareto_candidates(model: PySRRegressor, target_col: str) -> Optional[str]:
+    equations_df = getattr(model, "equations_", None)
+    if equations_df is None:
+        return None
+
+    if isinstance(equations_df, list):
+        if len(equations_df) != 1:
+            return None
+        equations_df = equations_df[0]
+
+    pareto_df = normalize_pareto_dataframe(pd.DataFrame(equations_df))
+    if pareto_df.empty:
+        return None
+
+    pareto_path = os.path.join(PYSR_OUTPUT_DIR, f"pareto_{target_col}.csv")
+    pareto_df.to_csv(pareto_path, index=False)
+    return pareto_path
+
 # ==========================================
 # 3. 循环建模 (PySR)
 # ==========================================
@@ -148,12 +190,14 @@ for target_col in gamma_target_columns:
         maxsize=25,       # 限制公式长度
         parsimony=0.001,  # 复杂度惩罚
         model_selection="best",
-        temp_equation_file=os.path.join(PYSR_OUTPUT_DIR, f"temp_hof_{target_col}.csv"),
         verbosity=1
     )
     
     model.fit(X_train, y_train)
     models[target_col] = model
+    pareto_path = export_pareto_candidates(model, target_col)
+    if pareto_path is not None:
+        print(f"[INFO] 已导出 Pareto 候选表: {pareto_path}")
     
     try:
         score = model.score(X_test, y_test)

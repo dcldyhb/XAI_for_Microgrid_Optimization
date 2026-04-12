@@ -43,22 +43,24 @@ parser.add_argument("--lr", type=float, default=0.0003)
 parser.add_argument("--alpha", type=float, default=0.2)
 parser.add_argument("--automatic_entropy_tuning", type=bool, default=True)
 parser.add_argument("--seed", type=int, default=123456)
-parser.add_argument("--batch_size", type=int, default=256)
+parser.add_argument("--batch_size", type=int, default=128)
 parser.add_argument("--num_steps", type=int, default=5016)
 parser.add_argument("--hidden_size", type=int, default=256)
 parser.add_argument("--updates_per_step", type=int, default=3)
-parser.add_argument("--start_steps", type=int, default=200)
+parser.add_argument("--start_steps", type=int, default=64)
 parser.add_argument("--target_update_interval", type=int, default=1)
 parser.add_argument("--replay_size", type=int, default=1000000)
 parser.add_argument("--eval_every", type=int, default=10)
 parser.add_argument("--eval_episodes", type=int, default=1)
 parser.add_argument("--gamma_mode", choices=["none", "random"], default="none")
-parser.add_argument("--random_gamma_dim", type=int, default=26)
+parser.add_argument("--random_gamma_dim", type=int, default=5)
 parser.add_argument("--disable_plots", action="store_true")
 parser.add_argument("--output_dir", type=str, default=None)
 parser.add_argument("--report_json", type=str, default=None)
 args = parser.parse_args()
 args.device = DEVICE
+
+print(f"基线配置: batch_size={args.batch_size}, start_steps={args.start_steps}")
 
 # ========== 数据集读取 ==========
 print(f"读取数据集: {DATASET_PATH}")
@@ -184,7 +186,7 @@ for i_episode in itertools.count(1):
         memory.push(state, action, reward / 100.0, next_state, mask, gamma=gamma, next_gamma=next_gamma)
         state = next_state
 
-        if len(memory) > args.batch_size:
+        if len(memory) >= args.batch_size:
             for _ in range(args.updates_per_step):
                 c1, c2, p, ent, alpha = agent.update_parameters(memory, args.batch_size, updates)
                 writer.add_scalar("loss/critic_1", c1, updates)
@@ -236,6 +238,8 @@ summary = {
     "episode_reward_min": float(np.min(rewards)) if rewards else 0.0,
     "episode_reward_max": float(np.max(rewards)) if rewards else 0.0,
     "final_episode_reward": float(rewards[-1]) if rewards else 0.0,
+    "batch_size": int(args.batch_size),
+    "start_steps": int(args.start_steps),
     **overall_info_metrics,
 }
 summary_path = os.path.abspath(args.report_json) if args.report_json else os.path.join(save_dir, "training_summary.json")

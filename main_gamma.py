@@ -70,22 +70,44 @@ parser.add_argument("--lr", type=float, default=0.0003)
 parser.add_argument("--alpha", type=float, default=0.2)
 parser.add_argument("--automatic_entropy_tuning", type=bool, default=True)
 parser.add_argument("--seed", type=int, default=123456)
-parser.add_argument("--batch_size", type=int, default=256)
+parser.add_argument("--batch_size", type=int, default=128)
 parser.add_argument("--num_steps", type=int, default=5016)
 parser.add_argument("--hidden_size", type=int, default=256)
 parser.add_argument("--updates_per_step", type=int, default=3)
-parser.add_argument("--start_steps", type=int, default=200)
+parser.add_argument("--start_steps", type=int, default=64)
 parser.add_argument("--target_update_interval", type=int, default=1)
 parser.add_argument("--replay_size", type=int, default=1000000)
 parser.add_argument("--eval_every", type=int, default=10)
 parser.add_argument("--eval_episodes", type=int, default=1)
 parser.add_argument("--gamma_mode", choices=["pysr", "random", "none"], default="pysr")
-parser.add_argument("--random_gamma_dim", type=int, default=26)
+parser.add_argument("--random_gamma_dim", type=int, default=5)
+parser.add_argument("--guided_start_prior_mix", type=float, default=0.0)
+parser.add_argument("--guided_policy_prior_mix", type=float, default=0.0)
+parser.add_argument("--guided_policy_mix_steps", type=int, default=0)
+parser.add_argument("--guided_exploration_noise", type=float, default=0.15)
+parser.add_argument("--gamma_actor_init_strength", type=float, default=0.0)
+parser.add_argument("--gamma_actor_final_strength", type=float, default=0.30)
+parser.add_argument("--gamma_actor_warmup_updates", type=int, default=1000)
+parser.add_argument("--gamma_critic_init_strength", type=float, default=0.0)
+parser.add_argument("--gamma_critic_final_strength", type=float, default=0.15)
+parser.add_argument("--gamma_critic_delay_updates", type=int, default=384)
+parser.add_argument("--gamma_critic_warmup_updates", type=int, default=1200)
+parser.add_argument("--gamma_prior_weight_init", type=float, default=0.0)
+parser.add_argument("--gamma_prior_weight_final", type=float, default=0.0)
+parser.add_argument("--gamma_prior_decay_updates", type=int, default=1)
+parser.add_argument("--gamma_prior_action_scale", type=float, default=1.0)
 parser.add_argument("--disable_plots", action="store_true")
 parser.add_argument("--output_dir", type=str, default=None)
 parser.add_argument("--report_json", type=str, default=None)
 args = parser.parse_args()
 args.device = DEVICE
+
+print(
+    "gamma 调制配置: "
+    f"batch_size={args.batch_size}, start_steps={args.start_steps}, "
+    f"gamma_actor_warmup_updates={args.gamma_actor_warmup_updates}, "
+    f"gamma_critic_delay_updates={args.gamma_critic_delay_updates}"
+)
 
 # ========== 数据集读取 ==========
 print(f"读取数据集: {DATASET_PATH}")
@@ -168,7 +190,6 @@ def compute_info_metrics(infos):
         "export_kWh": float(np.sum(export_kwh)),
         "energy_cost_rmb": float(np.sum(energy_cost)),
     }
-
 gamma_feature_names = list(getattr(gamma_calculator, "feature_names", [])) if gamma_calculator is not None else []
 gamma_signal_count = len(getattr(gamma_calculator, "gamma_signals", [])) if gamma_calculator is not None else 0
 active_random_gamma_dim = gamma_signal_count if gamma_signal_count > 0 else args.random_gamma_dim
@@ -233,7 +254,7 @@ for i_episode in itertools.count(1):
         gamma = compute_gamma_tensor(env)
 
         if args.start_steps > total_numsteps:
-            action = env.action_space.sample()
+            action = np.asarray(env.action_space.sample(), dtype=np.float32)
         else:
             action, log_prob, mean = agent.select_action(state, gamma=gamma, evaluate=False)
 
@@ -254,12 +275,16 @@ for i_episode in itertools.count(1):
         memory.push(state, action, reward / 100.0, next_state, mask, gamma=gamma, next_gamma=next_gamma)
         state = next_state
 
-        if len(memory) > args.batch_size:
+        if len(memory) >= args.batch_size:
             for _ in range(args.updates_per_step):
                 c1, c2, p, ent, alpha = agent.update_parameters(memory, args.batch_size, updates)
                 writer.add_scalar("loss/critic_1", c1, updates)
                 writer.add_scalar("loss/critic_2", c2, updates)
                 writer.add_scalar("loss/policy", p, updates)
+                writer.add_scalar("loss/policy_prior", float(getattr(agent, "last_policy_prior_loss", 0.0)), updates)
+                writer.add_scalar("gamma/prior_confidence", float(getattr(agent, "last_policy_prior_confidence", 0.0)), updates)
+                writer.add_scalar("gamma/actor_strength", float(getattr(agent, "last_actor_gamma_strength", 0.0)), updates)
+                writer.add_scalar("gamma/critic_strength", float(getattr(agent, "last_critic_gamma_strength", 0.0)), updates)
                 updates += 1
 
         if total_numsteps >= args.num_steps:
@@ -306,6 +331,21 @@ summary = {
     "episode_reward_min": float(np.min(rewards)) if rewards else 0.0,
     "episode_reward_max": float(np.max(rewards)) if rewards else 0.0,
     "final_episode_reward": float(rewards[-1]) if rewards else 0.0,
+    "batch_size": int(args.batch_size),
+    "start_steps": int(args.start_steps),
+    "guided_start_prior_mix": float(args.guided_start_prior_mix),
+    "guided_policy_prior_mix": float(args.guided_policy_prior_mix),
+    "guided_policy_mix_steps": int(args.guided_policy_mix_steps),
+    "guided_exploration_noise": float(args.guided_exploration_noise),
+    "gamma_actor_final_strength": float(args.gamma_actor_final_strength),
+    "gamma_actor_warmup_updates": int(args.gamma_actor_warmup_updates),
+    "gamma_critic_final_strength": float(args.gamma_critic_final_strength),
+    "gamma_critic_delay_updates": int(args.gamma_critic_delay_updates),
+    "gamma_critic_warmup_updates": int(args.gamma_critic_warmup_updates),
+    "gamma_prior_weight_init": float(args.gamma_prior_weight_init),
+    "gamma_prior_weight_final": float(args.gamma_prior_weight_final),
+    "gamma_prior_decay_updates": int(args.gamma_prior_decay_updates),
+    "gamma_prior_action_scale": float(args.gamma_prior_action_scale),
     **overall_info_metrics,
 }
 summary_path = os.path.abspath(args.report_json) if args.report_json else os.path.join(save_dir, "training_summary.json")
